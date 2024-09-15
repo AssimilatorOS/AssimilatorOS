@@ -97,7 +97,7 @@ function create_cfg_tree() {
         install -v -d -m 755 -o root -g root services.d
         install -v -d -m 755 -o root -g root opt
         install -v -d -m 755 -o root -g root skel
-        ln -sv /opt/local/etc local
+        ln -sv ../opt/local/etc local
         ln -sv /proc/mounts mtab
     popd >/dev/null
     ln -sv cfg etc
@@ -275,7 +275,7 @@ function build_busybox() {
     # out of source builds don't seem to work, so in-source we go
     pushd 3rdparty/busybox >/dev/null
         make mrproper
-        cp ../BusyBox.config .config
+        cp -v ../BusyBox.config .config
         make oldconfig
         make
     popd >/dev/null
@@ -297,21 +297,39 @@ function install_busybox() {
         popd >/dev/null
         # now that things are installed, clean up the busybox source tree
         make mrproper
-        rm -v docs/BusyBox.html
-        rm -v docs/BusyBox.txt
-        rm -v docs/busybox.1
-        rm -v docs/busybox.net/
-        rm -v docs/busybox.pod
-        rm -v include/common_bufsiz.h.method
+        rm -v -f docs/BusyBox.html
+        rm -v -f docs/BusyBox.txt
+        rm -v -f docs/busybox.1
+        rm -v -r -f docs/busybox.net/
+        rm -v -f docs/busybox.pod
+        rm -v -f include/common_bufsiz.h.method
     popd >/dev/null
 }
 
 function build_kernel() {
-    true
+    pushd 3rdparty/linux >/dev/null
+        # ensure we are working with a clean tree
+        rm -v -r -f build
+        # now lets build this out-of-source
+        mkdir -v build
+        cd build
+        make KBUILD_SRC=../ -f ../Makefile mrproper
+        cp -v ../../LinuxKernel.config .config
+        make KBUILD_SRC=../ -f ../Makefile oldconfig
+        make
+        cd -
+    popd >/dev/null
 }
 
 function install_kernel() {
-    true
+    pushd 3rdparty/linux >/dev/null
+        cd build
+        make INSTALL_PATH=../../../rootfs/System/boot install ||:
+        make INSTALL_MOD_PATH=../../../rootfs/System/lib/modules modules_install ||:
+        cd -
+        # clean up after ourselves
+        rm -v -r -f build
+    popd >/dev/null
 }
 
 function build_grub() {
@@ -326,7 +344,6 @@ function build_3rdparty() {
     # build and install busybox
     build_busybox
     install_busybox
-    exit
 
     # build and install kernel
     build_kernel
@@ -335,6 +352,7 @@ function build_3rdparty() {
     # build and install GNU Grub2 bootloader
     build_grub
     install_grub
+    exit
 
     # build and install JQ
     build_jq
@@ -359,6 +377,8 @@ function build_3rdparty() {
     # build and install XFS Programs
     build_xfsprogs
     install_xfsprogs
+
+    # build and install dialog
 }
 
 function install_host_libs() {
