@@ -1,2 +1,5 @@
 # don't allow tracking of the image itself
 vdisk.img
+
+# don't include the rootfs when mounted
+rootfs
