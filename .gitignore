@@ -1,5 +1,16 @@
 # don't allow tracking of the image itself
 vdisk.img
 
+# don't track object files
+*.a
+*.o
+
+# don't track build artifacts
+*.cmd
+3rdparty/busybox*/*/Config.in
+3rdparty/busybox*/*/*/Config.in
+3rdparty/busybox*/*/Kbuild
+3rdparty/busybox*/*/*/Kbuild
+
 # don't include the rootfs when mounted
 rootfs

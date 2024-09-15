@@ -4,7 +4,7 @@ set -e
 set -u
 set -o pipefail
 
-SCRIPT_NAME=$(basename $0)
+SCRIPT_NAME="$(basename "$0")"
 
 function root_chk() {
     if [[ "${EUID}" -ne 0 ]]; then
@@ -67,7 +67,7 @@ function mount_image() {
 }
 
 function create_opt_local_tree() {
-    pushd opt/local
+    pushd opt/local >/dev/null
         install -v -d -m 755 -o root -g root bin
         install -v -d -m 755 -o root -g root etc
         install -v -d -m 755 -o root -g root sbin
@@ -75,12 +75,12 @@ function create_opt_local_tree() {
         install -v -d -m 755 -o root -g root lib64
         install -v -d -m 755 -o root -g root share
         install -v -d -m 755 -o root -g root var
-    popd
+    popd >/dev/null
 }
 
 function create_cfg_tree() {
     install -v -d -m 755 -o root -g root cfg
-    pushd cfg
+    pushd cfg >/dev/null
         install -v -d -m 755 -o root -g root cron.d
         install -v -d -m 755 -o root -g root cron.daily
         install -v -d -m 755 -o root -g root cron.hourly
@@ -99,13 +99,13 @@ function create_cfg_tree() {
         install -v -d -m 755 -o root -g root skel
         ln -sv /opt/local/etc local
         ln -sv /proc/mounts mtab
-    popd
+    popd >/dev/null
     ln -sv cfg etc
 }
 
 function create_man_tree() {
     install -v -d -m 755 -o root -g root man
-    pushd man
+    pushd man >/dev/null
         install -v -d -m 755 -o root -g root man1
         install -v -d -m 755 -o root -g root man2
         install -v -d -m 755 -o root -g root man3
@@ -114,12 +114,12 @@ function create_man_tree() {
         install -v -d -m 755 -o root -g root man6
         install -v -d -m 755 -o root -g root man7
         install -v -d -m 755 -o root -g root man8
-    popd
+    popd >/dev/null
 }
 
 function create_share_tree() {
     install -v -d -m 755 -o root -g root share
-    pushd share
+    pushd share >/dev/null
         install -v -d -m 755 -o root -g root doc
         install -v -d -m 755 -o root -g root info
         install -v -d -m 755 -o root -g root locale
@@ -128,12 +128,12 @@ function create_share_tree() {
         install -v -d -m 755 -o root -g root nls
         install -v -d -m 755 -o root -g root terminfo
         install -v -d -m 755 -o root -g root zoneinfo
-    popd
+    popd >/dev/null
 }
 
 function create_var_tree() {
     install -v -d -m 755 -o root -g root var
-    pushd var
+    pushd var >/dev/null
         install -v -d -m 755 -o root -g root adm
         install -v -d -m 755 -o root -g root cache
         install -v -d -m 755 -o root -g root crash
@@ -148,15 +148,21 @@ function create_var_tree() {
         install -v -d -m 755 -o root -g root run/lock
         ln -sv run/lock lock
         install -v -d -m 755 -o root -g root spool
-        install -v -d -m 711 -o root -g root spool/cron
+        install -v -d -m 700 -o root -g root spool/cron
+        pushd spool/cron >/dev/null
+            install -v -d -m 700 -o root -g root lastrun
+            install -v -d -m 700 -o root -g root tabs
+            # compatibility link
+            ln -sv tabs crontabs
+        popd >/dev/null
         install -v -d -m 1777 -o root -g root spool/mail
         ln -sv spool/mail mail
         install -v -d -m 1777 -o root -g root tmp
-    popd
+    popd >/dev/null
 }
 
 function create_system_tree() {
-    pushd System
+    pushd System >/dev/null
         install -v -d -m 755 -o root -g root bin
         ln -sv bin sbin
         install -v -d -m 755 -o root -g root boot/EFI/Boot
@@ -171,7 +177,7 @@ function create_system_tree() {
         create_share_tree
         install -v -d -m 1777 -o root -g root tmp
         create_var_tree
-    popd
+    popd >/dev/null
 }
 
 function create_symlinks() {
@@ -190,7 +196,7 @@ function create_symlinks() {
 
 function install_configuration_files() {
     # install configuration files
-    pushd rootfs
+    pushd rootfs >/dev/null
         touch etc/hostname
         ln -sv etc/hostname etc/HOSTNAME
         touch etc/network/interfaces
@@ -232,9 +238,9 @@ function install_configuration_files() {
         install -v -m 644 -o root -g root ../configs/sysctl.conf etc/
         install -v -m 644 -o root -g root ../configs/syslog.conf etc/
         install -v -m 644 -o root -g root ../configs/assimilatoros-release etc/
-        pushd System/cfg
+        pushd System/cfg >/dev/null
             ln -sv assimilatoros-release os-release
-        popd
+        popd >/dev/null
         install -v -m 644 -o root -g root ../configs/dnsd.conf etc/
         install -v -m 644 -o root -g root ../configs/inetd.conf etc/
         install -v -m 644 -o root -g root ../configs/inittab etc/
@@ -243,11 +249,11 @@ function install_configuration_files() {
         # shell configuration
         install -v -m 644 -o root -g root ../shellcfg/profile etc/
         install -v -m 644 -o root -g root ../shellcfg/umask.sh etc/profile.d/
-    popd
+    popd >/dev/null
 }
 
 function create_dir_tree() {
-    pushd rootfs
+    pushd rootfs >/dev/null
         install -v -d -m 755 -o root -g root dev
         install -v -d -m 755 -o root -g root opt
         install -v -d -m 755 -o root -g root opt/local
@@ -259,10 +265,111 @@ function create_dir_tree() {
         create_opt_local_tree
         create_system_tree
         create_symlinks
-        pushd Users
+        pushd Users >/dev/null
             install -v -d -m 700 -o root -g root root
-        popd
-    popd
+        popd >/dev/null
+    popd >/dev/null
+}
+
+function build_busybox() {
+    # out of source builds don't seem to work, so in-source we go
+    pushd 3rdparty/busybox >/dev/null
+        make mrproper
+        cp ../BusyBox.config .config
+        make oldconfig
+        make
+    popd >/dev/null
+}
+
+function install_busybox() {
+    pushd 3rdparty/busybox >/dev/null
+        # we use some applets that require setuid rights
+        install -v -m 4755 -o root -g root busybox ../../rootfs/System/bin/
+        install -v -m 644 -o root -g root docs/busybox.1 ../../rootfs/System/share/man/man1/
+        pushd ../../rootfs/System/share/man/man1 >/dev/null
+            gzip -v -9 busybox.1
+        popd >/dev/null
+        # now make our symlinks
+        pushd ../../rootfs/System/bin >/dev/null
+            for binary in $(./busybox --list); do
+                ln -sv busybox "${binary}"
+            done
+        popd >/dev/null
+        # now that things are installed, clean up the busybox source tree
+        make mrproper
+        rm -v docs/BusyBox.html
+        rm -v docs/BusyBox.txt
+        rm -v docs/busybox.1
+        rm -v docs/busybox.net/
+        rm -v docs/busybox.pod
+        rm -v include/common_bufsiz.h.method
+    popd >/dev/null
+}
+
+function build_kernel() {
+    true
+}
+
+function install_kernel() {
+    true
+}
+
+function build_grub() {
+    true
+}
+
+function install_grub() {
+    true
+}
+
+function build_3rdparty() {
+    # build and install busybox
+    build_busybox
+    install_busybox
+    exit
+
+    # build and install kernel
+    build_kernel
+    install_kernel
+
+    # build and install GNU Grub2 bootloader
+    build_grub
+    install_grub
+
+    # build and install JQ
+    build_jq
+    install_jq
+
+    # build and install SQLite3
+    build_sqlite3
+    install_sqlite3
+
+    # build and install Rsync
+    build_rsync
+    install_rsync
+
+    # build and install PartClone
+    build_partclone
+    install_partclone
+
+    # build and install GNU Nano
+    build_nano
+    install_nano
+
+    # build and install XFS Programs
+    build_xfsprogs
+    install_xfsprogs
+}
+
+function install_host_libs() {
+    true
+    pushd "${proj_dir}/rootfs" >/dev/null
+        for binary in "bin/busybox" "bin/jq"; do
+            ldd $binary | while read -r line; do
+                echo "LINE: $line"
+            done
+        done
+    popd >/dev/null
 }
 
 function main() {
@@ -270,21 +377,33 @@ function main() {
     root_chk
 
     # get where script lives
-    local proj_dir="$(dirname $(cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd))"
+    local source_dir
+    source_dir="$(dirname "${BASH_SOURCE[0]}")"
+
+    local proj_dir
+    proj_dir="$(dirname "$(cd "$source_dir" &> /dev/null && pwd)")"
+
     echo "${SCRIPT_NAME}: project directory: ${proj_dir}" >&2
 
     # chdir to proj_dir
-    pushd $proj_dir >/dev/null
+    pushd "${proj_dir}" >/dev/null
         # check if needed tools are installed
         check_tools
 
         # create image
         create_vdisk
+
         # mount rootfs and ESP
         mount_image
 
         # create directory tree for the OS
         create_dir_tree
+
+        # build and install 3rdparty tools
+        build_3rdparty
+
+        # install libraries
+        install_host_libs
     popd
 }
 
