@@ -8,12 +8,15 @@ The operating system, through symlinks adheres to the FHS, however, borrows from
 
 Currently, Assimilator OS uses the following components for the operating system:
 
-- BusyBox
-- The Linux Kernel
-- GNU Grub v2 Bootloader
-- JQ
-- SQLite3
-- Rsync
-- PartClone
-- GNU Nano Editor
-- XFS Progs
+| Component | Version |
+| --- | --- |
+| BusyBox | 1.36.1 |
+| Linux Kernel | 5.10.226 (LTS) |
+| GNU Grub | 2.12 |
+| JQ | 1.7.1 |
+| SQLite3 | 3.46.1 |
+| Rsync | 3.3.0 |
+| PartClone | 0.3.32 |
+| GNU Nano Editor | 8.2 |
+| Dialog | 1.3 |
+| XFS Progs | 6.9.0 |
