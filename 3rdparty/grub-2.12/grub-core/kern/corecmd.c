@@ -135,6 +135,14 @@ grub_core_cmd_ls (struct grub_command *cmd __attribute__ ((unused)),
       if (! dev)
 	goto fail;
 
+      if (dev->disk &&
+	  grub_disk_is_crypto (dev->disk) &&
+	  grub_file_filters[GRUB_FILE_FILTER_NOCAT])
+	{
+	  grub_error (GRUB_ERR_ACCESS_DENIED, N_("prohibited to browse encrypted content"));
+	  goto fail;
+	}
+
       fs = grub_fs_probe (dev);
       path = grub_strchr (argv[0], ')');
       if (! path)

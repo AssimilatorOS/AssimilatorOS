@@ -19,6 +19,7 @@
 #include <config.h>
 
 #include <grub/util/install.h>
+#include <grub/util/ofpath.h>
 #include <grub/emu/hostdisk.h>
 #include <grub/util/misc.h>
 #include <grub/misc.h>
@@ -131,16 +132,60 @@ grub_install_remove_efi_entries_by_distributor (const char *efi_distributor)
   return rc;
 }
 
-int
-grub_install_register_efi (grub_device_t efidir_grub_dev,
-			   const char *efifile_path,
-			   const char *efi_distributor)
+char *
+build_multi_boot_device(const char *install_device)
 {
-  const char * efidir_disk;
-  int efidir_part;
+  char *sysfs_path;
+  char *nvme_ns;
+  unsigned int nsid;
+  char *ptr;
+  char *boot_device_string;
+  struct dirent *ep;
+  DIR *dp;
+
+  nvme_ns = strchr(install_device, 'n');
+  nsid = of_path_get_nvme_nsid(nvme_ns);
+  sysfs_path = nvme_get_syspath(nvme_ns);
+  strcat(sysfs_path, "/device");
+  sysfs_path = xrealpath(sysfs_path);
+
+  dp = opendir(sysfs_path);
+  ptr = boot_device_string = xmalloc (1000);
+
+  /* We cannot have a boot list with more than five entries */
+  while((ep = readdir(dp)) != NULL){
+    char *nvme_device;
+
+    if (grub_strstr(ep->d_name, "nvme")) {
+      nvme_device = xasprintf ("%s%s%x ",
+                get_ofpathname(ep->d_name),"/namespace@", nsid);
+      if ((strlen(boot_device_string) + strlen(nvme_device)) >= 200*5 - 1) {
+        grub_util_warn (_("More than five entries cannot be specified in the bootlist"));
+        free(nvme_device);
+        break;
+      }
+
+      strncpy(ptr, nvme_device, strlen(nvme_device));
+      ptr += strlen(nvme_device);
+      free(nvme_device);
+    }
+  }
+
+  *--ptr = '\0';
+  closedir(dp);
+
+  return boot_device_string;
+}
+
+int
+grub_install_register_efi (const grub_disk_t *efidir_grub_disk,
+			   const char *efifile_path,
+			   const char *efi_distributor,
+			   const char *force_disk)
+{
   int ret;
-  efidir_disk = grub_util_biosdisk_get_osdev (efidir_grub_dev->disk);
-  efidir_part = efidir_grub_dev->disk->partition ? efidir_grub_dev->disk->partition->number + 1 : 1;
+  const grub_disk_t *curdisk;
+  int ndev = 0;
 
   if (grub_util_exec_redirect_null ((const char * []){ "efibootmgr", "--version", NULL }))
     {
@@ -158,22 +203,50 @@ grub_install_register_efi (grub_device_t efidir_grub_dev,
   if (ret)
     return ret;
 
-  char *efidir_part_str = xasprintf ("%d", efidir_part);
+  for (curdisk = efidir_grub_disk; *curdisk; curdisk++)
+    ndev++;
 
-  if (!verbosity)
-    ret = grub_util_exec ((const char * []){ "efibootmgr", "-q",
+  for (curdisk = efidir_grub_disk; *curdisk; curdisk++)
+    {
+      const char * efidir_disk;
+      int efidir_part;
+      char *efidir_part_str;
+      char *new_efi_distributor = NULL;
+      grub_disk_t disk = *curdisk;
+
+      efidir_disk = force_disk ? : grub_util_biosdisk_get_osdev (disk);
+      if (!efidir_disk)
+	grub_util_error (_("%s: no device for efi"), disk->name);
+
+      efidir_part = disk->partition ? disk->partition->number + 1 : 1;
+      efidir_part_str = xasprintf ("%d", efidir_part);
+      if (ndev > 1)
+	{
+	  const char *p = grub_strrchr (efidir_disk, '/');
+	  new_efi_distributor = xasprintf ("%s (%s%d)\n",
+			efi_distributor,
+			p ? p + 1: efidir_disk,
+			efidir_part);
+	}
+
+      if (!verbosity)
+	ret = grub_util_exec ((const char * []){ "efibootmgr", "-q",
 	  "-c", "-d", efidir_disk,
 	  "-p", efidir_part_str, "-w",
-	  "-L", efi_distributor, "-l",
+	  "-L", new_efi_distributor ? : efi_distributor, "-l",
 	  efifile_path, NULL });
-  else
-    ret = grub_util_exec ((const char * []){ "efibootmgr",
+      else
+	ret = grub_util_exec ((const char * []){ "efibootmgr",
 	  "-c", "-d", efidir_disk,
 	  "-p", efidir_part_str, "-w",
-	  "-L", efi_distributor, "-l",
+	  "-L", new_efi_distributor ? : efi_distributor, "-l",
 	  efifile_path, NULL });
-  free (efidir_part_str);
-  return ret;
+      free (efidir_part_str);
+      free (new_efi_distributor);
+      if (ret)
+	return ret;
+    }
+  return 0;
 }
 
 void
@@ -215,8 +288,14 @@ grub_install_register_ieee1275 (int is_prep, const char *install_device,
 	}
       *ptr = '\0';
     }
-  else
+  else {
     boot_device = get_ofpathname (install_device);
+
+    if (grub_strstr(boot_device, "nvme-of")) {
+       free (boot_device);
+       boot_device =  build_multi_boot_device(install_device);
+    }
+  }
 
   if (grub_util_exec ((const char * []){ "nvsetenv", "boot-device",
 	  boot_device, NULL }))
@@ -238,4 +317,49 @@ grub_install_sgi_setup (const char *install_device,
 	install_device, "--unix-to-vh",
 	imgfile, destname, NULL });
   grub_util_warn ("%s", _("You will have to set `SystemPartition' and `OSLoader' manually."));
+}
+
+void
+grub_install_zipl (const char *dest, int install, int force)
+{
+  if (grub_util_exec ((const char * []){ PACKAGE"-zipl-setup",
+	verbosity ? "-v" : "",
+	install ? "" : "--debug",
+	!force ? "" : "--force",
+	"-z", dest, NULL }))
+    grub_util_error (_("`%s' failed.\n"), PACKAGE"-zipl-setup");
+}
+
+char *
+grub_install_get_filesystem (const char *path)
+{
+  int fd;
+  pid_t pid;
+  FILE *fp;
+  ssize_t len;
+  char *buf = NULL;
+  size_t bufsz = 0;
+
+  pid = grub_util_exec_pipe ((const char * []){ "stat", "-f", "-c", "%T", path, NULL }, &fd);
+  if (!pid)
+    return NULL;
+
+  fp = fdopen (fd, "r");
+  if (!fp)
+    return NULL;
+
+  len = getline (&buf, &bufsz, fp);
+  if (len == -1)
+    {
+      free (buf);
+      fclose (fp);
+      return NULL;
+    }
+
+  fclose (fp);
+
+  if (len > 0 && buf[len - 1] == '\n')
+    buf[len - 1] = '\0';
+
+  return buf;
 }

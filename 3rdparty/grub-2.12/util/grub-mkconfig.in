@@ -131,25 +131,53 @@ else
     exit 1
 fi
 
-# Device containing our userland.  Typically used for root= parameter.
-GRUB_DEVICE="`${grub_probe} --target=device /`"
-GRUB_DEVICE_UUID="`${grub_probe} --device ${GRUB_DEVICE} --target=fs_uuid 2> /dev/null`" || true
-GRUB_DEVICE_PARTUUID="`${grub_probe} --device ${GRUB_DEVICE} --target=partuuid 2> /dev/null`" || true
+probe_nfsroot_device () {
+    while read line ; do
+        part1=`echo $line | sed -e 's! - .*$!!'`
+        part2=`echo $line | sed -n -e 's! - \(.*\)$!\n\1!p' | sed 1d`
 
-# Device containing our /boot partition.  Usually the same as GRUB_DEVICE.
-GRUB_DEVICE_BOOT="`${grub_probe} --target=device /boot`"
-GRUB_DEVICE_BOOT_UUID="`${grub_probe} --device ${GRUB_DEVICE_BOOT} --target=fs_uuid 2> /dev/null`" || true
+        set -- $part1
+        path=$5
+
+        set -- $part2
+        fstype=$1
+        device=$2
+
+        if [ "x${path}" = "x/" ] &&
+           [ "x${fstype}" = "xnfs" -o "x${fstype}" = "xnfs4" ] ; then
+            echo "${fstype}:$device"
+            return
+        fi
+    done
+}
+
+NFSROOT_DEVICE="`awk '($9!="autofs")&&($9!="securityfs")' /proc/self/mountinfo | probe_nfsroot_device`"
 
 # Disable os-prober by default due to security reasons.
 GRUB_DISABLE_OS_PROBER="true"
 
-# Filesystem for the device containing our userland.  Used for stuff like
-# choosing Hurd filesystem module.
-GRUB_FS="`${grub_probe} --device ${GRUB_DEVICE} --target=fs 2> /dev/null || echo unknown`"
+if [ "x${NFSROOT_DEVICE}" != "x" ]; then
+    GRUB_DEVICE=""
+    GRUB_DEVICE_UUID=""
+    GRUB_DEVICE_PARTUUID=""
+    GRUB_FS="unknown"
+else
+    # Filesystem for the device containing our userland.  Used for stuff like
+    # choosing Hurd filesystem module.
+    GRUB_FS="`${grub_probe} --device ${GRUB_DEVICE} --target=fs 2> /dev/null || echo unknown`"
+    # Device containing our userland.  Typically used for root= parameter.
+    GRUB_DEVICE="`${grub_probe} --target=device /`"
+    GRUB_DEVICE_UUID="`${grub_probe} --device ${GRUB_DEVICE} --target=fs_uuid 2> /dev/null`" || true
+    GRUB_DEVICE_PARTUUID="`${grub_probe} --device ${GRUB_DEVICE} --target=partuuid 2> /dev/null`" || true
+fi
 
-if [ x"$GRUB_FS" = xunknown ]; then
+if [ x"$GRUB_FS" = x ] || [ x"$GRUB_FS" = xunknown ]; then
     GRUB_FS="$(stat -f -c %T / || echo unknown)"
 fi
+
+# Device containing our /boot partition.  Usually the same as GRUB_DEVICE.
+GRUB_DEVICE_BOOT="`${grub_probe} --target=device /boot`"
+GRUB_DEVICE_BOOT_UUID="`${grub_probe} --device ${GRUB_DEVICE_BOOT} --target=fs_uuid 2> /dev/null`" || true
 
 # Provide a default set of stock linux early initrd images.
 # Define here so the list can be modified in the sourced config file.
@@ -172,7 +200,8 @@ fi
 
 # XXX: should this be deprecated at some point?
 if [ "x${GRUB_TERMINAL}" != "x" ] ; then
-  GRUB_TERMINAL_INPUT="${GRUB_TERMINAL}"
+# bnc#771393, bsc#1187565 - fix error: terminal 'gfxterm' isn't found.
+  GRUB_TERMINAL_INPUT="`echo ${GRUB_TERMINAL} | sed -e '/\bgfxterm\b/{s/\bconsole\b//g;s/\bgfxterm\b/console/}'`"
   GRUB_TERMINAL_OUTPUT="${GRUB_TERMINAL}"
 fi
 
@@ -196,6 +225,19 @@ GRUB_ACTUAL_DEFAULT="$GRUB_DEFAULT"
 
 if [ "x${GRUB_ACTUAL_DEFAULT}" = "xsaved" ] ; then GRUB_ACTUAL_DEFAULT="`"${grub_editenv}" - list | sed -n '/^saved_entry=/ s,^saved_entry=,,p'`" ; fi
 
+if [ x"${GRUB_DISTRIBUTOR}" = x ] ; then
+    for i in "${sysconfdir}/os-release" "/usr/lib/os-release" ; do
+      if [ -f "$i" ] ; then
+        . "$i"
+        break
+      fi
+    done
+    if [ x"${NAME}" != x ] && [ x"${VERSION}" != x ] ; then
+      GRUB_DISTRIBUTOR="${NAME} ${VERSION}"
+    else
+      GRUB_DISTRIBUTOR="${NAME}"
+    fi
+fi
 
 # These are defined in this script, export them here so that user can
 # override them.
@@ -255,7 +297,10 @@ export GRUB_DEFAULT \
   GRUB_ENABLE_CRYPTODISK \
   GRUB_BADRAM \
   GRUB_OS_PROBER_SKIP_LIST \
-  GRUB_DISABLE_SUBMENU
+  GRUB_DISABLE_SUBMENU \
+  SUSE_BTRFS_SNAPSHOT_BOOTING \
+  SUSE_CMDLINE_XENEFI \
+  SUSE_REMOVE_LINUX_ROOT_PARAM
 
 if test "x${grub_cfg}" != "x"; then
   rm -f "${grub_cfg}.new"
@@ -293,6 +338,15 @@ for i in "${grub_mkconfig_dir}"/* ; do
   esac
 done
 
+sync_fs_journal () {
+  if test "x$GRUB_DEVICE" = "x$GRUB_DEVICE_BOOT" &&
+     test "x$GRUB_FS" = "xxfs" -o "x$GRUB_FS" = "xext2" &&
+     test "x${grub_cfg}" != "x" -a "x`make_system_path_relative_to_its_root $grub_cfg`" = "x/boot/grub2/grub.cfg" &&
+     test -x /usr/sbin/fsfreeze; then
+    /usr/sbin/fsfreeze --freeze / && /usr/sbin/fsfreeze --unfreeze /
+  fi
+} >&2
+
 if test "x${grub_cfg}" != "x" ; then
   if ! ${grub_script_check} ${grub_cfg}.new; then
     # TRANSLATORS: %s is replaced by filename
@@ -309,6 +363,12 @@ and /etc/grub.d/* files or please file a bug report with
     cat ${grub_cfg}.new > ${grub_cfg}
     umask $oldumask
     rm -f ${grub_cfg}.new
+    # check if default entry need to be corrected for updated distributor version
+    # and/or use fallback entry if default kernel entry removed
+    if test -x /usr/sbin/grub2-check-default; then
+       /usr/sbin/grub2-check-default >&2
+    fi
+    sync_fs_journal || true
   fi
 fi
 

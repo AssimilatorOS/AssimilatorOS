@@ -33,7 +33,8 @@ grub_install_register_ieee1275 (int is_prep, const char *install_device,
 void
 grub_install_register_efi (grub_device_t efidir_grub_dev,
 			   const char *efifile_path,
-			   const char *efi_distributor)
+			   const char *efi_distributor,
+			   const char *force_disk)
 {
   grub_util_error ("%s", _("no EFI routines are available for your platform"));
 }
@@ -43,4 +44,16 @@ grub_install_sgi_setup (const char *install_device,
 			const char *imgfile, const char *destname)
 {
   grub_util_error ("%s", _("no SGI routines are available for your platform"));
+}
+
+void
+grub_install_zipl (const char *d, int i, int f)
+{
+  grub_util_error ("%s", _("no zIPL routines are available for your platform"));
+}
+
+char *
+grub_install_get_filesystem (const char *path)
+{
+  return NULL;
 }

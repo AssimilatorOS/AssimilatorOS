@@ -465,11 +465,15 @@ static char **pubkeys;
 static size_t npubkeys;
 static char *sbat;
 static int disable_shim_lock;
+static char **x509keys;
+static size_t nx509keys;
 static grub_compression_t compression;
+static size_t appsig_size;
 
 int
 grub_install_parse (int key, char *arg)
 {
+  const char *end;
   switch (key)
     {
     case GRUB_INSTALL_OPTIONS_INSTALL_CORE_COMPRESS:
@@ -503,6 +507,12 @@ grub_install_parse (int key, char *arg)
       return 1;
     case GRUB_INSTALL_OPTIONS_DISABLE_SHIM_LOCK:
       disable_shim_lock = 1;
+      return 1;
+    case 'x':
+      x509keys = xrealloc (x509keys,
+			  sizeof (x509keys[0])
+			  * (nx509keys + 1));
+      x509keys[nx509keys++] = xstrdup (arg);
       return 1;
 
     case GRUB_INSTALL_OPTIONS_VERBOSITY:
@@ -567,6 +577,12 @@ grub_install_parse (int key, char *arg)
       grub_util_error (_("Unrecognized compression `%s'"), arg);
     case GRUB_INSTALL_OPTIONS_GRUB_MKIMAGE:
       return 1;
+    case GRUB_INSTALL_OPTIONS_APPENDED_SIGNATURE_SIZE:
+      grub_errno = 0;
+      appsig_size = grub_strtol(arg, &end, 10);
+      if (grub_errno)
+        return 0;
+      return 1;
     default:
       return 0;
     }
@@ -628,6 +644,9 @@ grub_install_make_image_wrap_file (const char *dir, const char *prefix,
   for (pk = pubkeys; pk < pubkeys + npubkeys; pk++)
     slen += sizeof (" --pubkey ''") + grub_strlen (*pk);
 
+  for (pk = x509keys; pk < x509keys + nx509keys; pk++)
+    slen += 10 + grub_strlen (*pk);
+
   for (md = modules.entries; *md; md++)
     slen += sizeof (" ''") + grub_strlen (*md);
 
@@ -668,6 +687,14 @@ grub_install_make_image_wrap_file (const char *dir, const char *prefix,
       *p++ = '\'';
     }
 
+  for (pk = x509keys; pk < x509keys + nx509keys; pk++)
+    {
+      p = grub_stpcpy (p, "--x509 '");
+      p = grub_stpcpy (p, *pk);
+      *p++ = '\'';
+      *p++ = ' ';
+    }
+
   for (md = modules.entries; *md; md++)
     {
       *p++ = ' ';
@@ -679,9 +706,11 @@ grub_install_make_image_wrap_file (const char *dir, const char *prefix,
   *p = '\0';
 
   grub_util_info ("grub-mkimage --directory '%s' --prefix '%s' --output '%s'"
-		  " --format '%s' --compression '%s'%s%s%s\n",
+		  " --format '%s' --compression '%s'"
+		  " --appended-signature-size %zu%s%s%s\n",
 		  dir, prefix, outname,
 		  mkimage_target, compnames[compression],
+		  appsig_size,
 		  note ? " --note" : "",
 		  disable_shim_lock ? " --disable-shim-lock" : "", s);
   free (s);
@@ -692,8 +721,9 @@ grub_install_make_image_wrap_file (const char *dir, const char *prefix,
 
   grub_install_generate_image (dir, prefix, fp, outname,
 			       modules.entries, memdisk_path,
-			       pubkeys, npubkeys, config_path, tgt,
-			       note, compression, dtb, sbat,
+			       pubkeys, npubkeys, x509keys, nx509keys,
+			       config_path, tgt,
+			       note, appsig_size, compression, dtb, sbat,
 			       disable_shim_lock);
   while (dc--)
     grub_install_pop_module ();
@@ -924,6 +954,7 @@ static struct
     [GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI] =  { "loongarch64", "efi"       },
     [GRUB_INSTALL_PLATFORM_RISCV32_EFI] =      { "riscv32",     "efi"       },
     [GRUB_INSTALL_PLATFORM_RISCV64_EFI] =      { "riscv64",     "efi"       },
+    [GRUB_INSTALL_PLATFORM_S390X_EMU] =        { "s390x",   "emu"       },
   };
 
 char *

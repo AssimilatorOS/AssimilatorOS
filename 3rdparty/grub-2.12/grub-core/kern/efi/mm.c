@@ -112,6 +112,38 @@ grub_efi_drop_alloc (grub_efi_physical_address_t address,
     }
 }
 
+/* Allocate pages below a specified address */
+void *
+grub_efi_allocate_pages_max (grub_efi_physical_address_t max,
+			     grub_efi_uintn_t pages)
+{
+  grub_efi_status_t status;
+  grub_efi_boot_services_t *b;
+  grub_efi_physical_address_t address = max;
+
+  if (max > GRUB_EFI_MAX_USABLE_ADDRESS)
+    return 0;
+
+  b = grub_efi_system_table->boot_services;
+  status = b->allocate_pages (GRUB_EFI_ALLOCATE_MAX_ADDRESS, GRUB_EFI_LOADER_DATA, pages, &address);
+
+  if (status != GRUB_EFI_SUCCESS)
+    return 0;
+
+  if (address == 0)
+    {
+      /* Uggh, the address 0 was allocated... This is too annoying,
+	 so reallocate another one.  */
+      address = max;
+      status = b->allocate_pages (GRUB_EFI_ALLOCATE_MAX_ADDRESS, GRUB_EFI_LOADER_DATA, pages, &address);
+      grub_efi_free_pages (0, pages);
+      if (status != GRUB_EFI_SUCCESS)
+	return 0;
+    }
+
+  return (void *) ((grub_addr_t) address);
+}
+
 /* Allocate pages. Return the pointer to the first of allocated pages.  */
 void *
 grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
@@ -121,6 +153,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
 {
   grub_efi_status_t status;
   grub_efi_boot_services_t *b;
+  grub_efi_physical_address_t ret = address;
 
   /* Limit the memory access to less than 4GB for 32-bit platforms.  */
   if (address > GRUB_EFI_MAX_USABLE_ADDRESS)
@@ -137,19 +170,22 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
     }
 
   b = grub_efi_system_table->boot_services;
-  status = b->allocate_pages (alloctype, memtype, pages, &address);
+  status = b->allocate_pages (alloctype, memtype, pages, &ret);
   if (status != GRUB_EFI_SUCCESS)
     {
+      grub_dprintf ("efi",
+		    "allocate_pages(%d, %d, 0x%0" PRIxGRUB_SIZE ", 0x%016" PRIxGRUB_UINT64_T ") = 0x%016" PRIxGRUB_SIZE "\n",
+		    alloctype, memtype, pages, address, status);
       grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
       return NULL;
     }
 
-  if (address == 0)
+  if (ret == 0)
     {
       /* Uggh, the address 0 was allocated... This is too annoying,
 	 so reallocate another one.  */
-      address = GRUB_EFI_MAX_USABLE_ADDRESS;
-      status = b->allocate_pages (alloctype, memtype, pages, &address);
+      ret = address;
+      status = b->allocate_pages (alloctype, memtype, pages, &ret);
       grub_efi_free_pages (0, pages);
       if (status != GRUB_EFI_SUCCESS)
 	{
@@ -158,9 +194,9 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
 	}
     }
 
-  grub_efi_store_alloc (address, pages);
+  grub_efi_store_alloc (ret, pages);
 
-  return (void *) ((grub_addr_t) address);
+  return (void *) ((grub_addr_t) ret);
 }
 
 void *
@@ -445,7 +481,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
     {
       if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY
 #if 1
-	  && desc->physical_start <= GRUB_EFI_MAX_USABLE_ADDRESS
+	  && desc->physical_start <= GRUB_EFI_MAX_ALLOCATION_ADDRESS
 #endif
 	  && desc->physical_start + PAGES_TO_BYTES (desc->num_pages) > 0x100000
 	  && desc->num_pages != 0)
@@ -463,9 +499,9 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 #if 1
 	  if (BYTES_TO_PAGES (filtered_desc->physical_start)
 	      + filtered_desc->num_pages
-	      > BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS))
+	      > BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_ALLOCATION_ADDRESS))
 	    filtered_desc->num_pages
-	      = (BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS)
+	      = (BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_ALLOCATION_ADDRESS)
 		 - BYTES_TO_PAGES (filtered_desc->physical_start));
 #endif
 
@@ -679,8 +715,21 @@ grub_efi_get_ram_base(grub_addr_t *base_addr)
   for (desc = memory_map, *base_addr = GRUB_EFI_MAX_USABLE_ADDRESS;
        (grub_addr_t) desc < ((grub_addr_t) memory_map + memory_map_size);
        desc = NEXT_MEMORY_DESCRIPTOR (desc, desc_size))
-    if (desc->attribute & GRUB_EFI_MEMORY_WB)
-      *base_addr = grub_min (*base_addr, desc->physical_start);
+    {
+      if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY &&
+          (desc->attribute & GRUB_EFI_MEMORY_WB))
+        {
+          *base_addr = grub_min (*base_addr, desc->physical_start);
+          grub_dprintf ("efi", "setting base_addr=0x%016" PRIxGRUB_ADDR "\n", *base_addr);
+        }
+      else
+        {
+          grub_dprintf ("efi", "ignoring address 0x%016" PRIxGRUB_UINT64_T "\n", desc->physical_start);
+        }
+    }
+
+  if (*base_addr == GRUB_EFI_MAX_USABLE_ADDRESS)
+    grub_dprintf ("efi", "base_addr 0x%016" PRIxGRUB_ADDR " is probably wrong.\n", *base_addr);
 
   grub_free(memory_map);
 

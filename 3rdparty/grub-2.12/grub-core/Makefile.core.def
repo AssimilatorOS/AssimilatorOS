@@ -149,6 +149,7 @@ kernel = {
   common = kern/misc.c;
   common = kern/parser.c;
   common = kern/partition.c;
+  common = kern/protectors.c;
   common = kern/rescue_parser.c;
   common = kern/rescue_reader.c;
   common = kern/term.c;
@@ -331,6 +332,7 @@ kernel = {
   powerpc_ieee1275 = kern/powerpc/cache.S;
   powerpc_ieee1275 = kern/powerpc/dl.c;
   powerpc_ieee1275 = kern/powerpc/compiler-rt.S;
+  powerpc_ieee1275 = kern/lockdown.c;
 
   sparc64_ieee1275 = kern/sparc64/cache.S;
   sparc64_ieee1275 = kern/sparc64/dl.c;
@@ -407,6 +409,9 @@ kernel = {
   extra_dist = kern/i386/realmode.S;
   extra_dist = boot/i386/pc/lzma_decode.S;
   extra_dist = kern/mips/cache_flush.S;
+
+  extra_dist = kern/s390x/dl.c;
+  extra_dist = lib/s390x/setjmp.S;
 };
 
 program = {
@@ -976,6 +981,21 @@ module = {
 };
 
 module = {
+  name = appendedsig;
+  common = commands/appendedsig/appendedsig.c;
+  common = commands/appendedsig/x509.c;
+  common = commands/appendedsig/pkcs7.c;
+  common = commands/appendedsig/asn1util.c;
+  common = commands/appendedsig/gnutls_asn1_tab.c;
+  common = commands/appendedsig/pkix_asn1_tab.c;
+
+  extra_dist = commands/appendedsig/appendedsig.h;
+  // posix wrapper required for gcry to get sys/types.h
+  cflags = '$(CFLAGS_POSIX)';
+  cppflags = '-I$(srcdir)/lib/posix_wrap';
+};
+
+module = {
   name = hdparm;
   common = commands/hdparm.c;
   enable = pci;
@@ -1183,6 +1203,7 @@ module = {
 module = {
   name = videotest;
   common = commands/videotest.c;
+  emu_condition = COND_NOT_emu;
 };
 
 module = {
@@ -1637,6 +1658,7 @@ module = {
   common = gfxmenu/gui_progress_bar.c;
   common = gfxmenu/gui_util.c;
   common = gfxmenu/gui_string_util.c;
+  emu_condition = COND_NOT_emu;
 };
 
 module = {
@@ -1838,7 +1860,9 @@ module = {
 
 module = {
   name = linux;
-  x86 = loader/i386/linux.c;
+  i386_pc = loader/i386/linux.c;
+  i386_efi = loader/i386/efi/linux.c;
+  x86_64_efi = loader/i386/efi/linux.c;
   i386_xen_pvh = loader/i386/linux.c;
   xen = loader/i386/xen.c;
   i386_pc = lib/i386/pc/vesa_modes_table.c;
@@ -1850,15 +1874,15 @@ module = {
   arm_coreboot = loader/arm/linux.c;
   arm_efi = loader/efi/linux.c;
   arm_uboot = loader/arm/linux.c;
-  arm64 = loader/efi/linux.c;
+  arm64 = loader/arm64/efi/linux.c;
   loongarch64 = loader/efi/linux.c;
   riscv32 = loader/efi/linux.c;
   riscv64 = loader/efi/linux.c;
-  i386_efi = loader/efi/linux.c;
-  x86_64_efi = loader/efi/linux.c;
   emu = loader/emu/linux.c;
   common = loader/linux.c;
-  common = lib/cmdline.c;
+  i386_efi = loader/efi/linux_boot.c;
+  x86_64_efi = loader/efi/linux_boot.c;
+  arm64 = loader/efi/linux_boot.c;
 };
 
 module = {
@@ -1915,6 +1939,13 @@ module = {
 module = {
   name = appleldr;
   common = loader/efi/appleloader.c;
+  enable = i386_efi;
+  enable = x86_64_efi;
+};
+
+module = {
+  name = linuxefi;
+  x86 = lib/fake_module.c;
   enable = i386_efi;
   enable = x86_64_efi;
 };
@@ -2068,11 +2099,13 @@ module = {
   name = gfxterm;
   common = term/gfxterm.c;
   enable = videomodules;
+  emu_condition = COND_NOT_emu;
 };
 
 module = {
   name = gfxterm_background;
   common = term/gfxterm_background.c;
+  emu_condition = COND_NOT_emu;
 };
 
 module = {
@@ -2131,13 +2164,13 @@ module = {
 module = {
   name = video_cirrus;
   x86 = video/cirrus.c;
-  enable = x86;
+  enable = x86_noefi;
 };
 
 module = {
   name = video_bochs;
   x86 = video/bochs.c;
-  enable = x86;
+  enable = x86_noefi;
 };
 
 module = {
@@ -2163,6 +2196,12 @@ module = {
 module = {
   name = setjmp_test;
   common = tests/setjmp_test.c;
+};
+
+module = {
+  name = appended_signature_test;
+  common = tests/appended_signature_test.c;
+  common = tests/appended_signatures.h;
 };
 
 module = {
@@ -2193,7 +2232,6 @@ module = {
   enable = i386_xen_pvh;
   enable = i386_efi;
   enable = x86_64_efi;
-  enable = emu;
   enable = xen;
 };
 
@@ -2241,6 +2279,7 @@ module = {
 module = {
   name = gfxterm_menu;
   common = tests/gfxterm_menu.c;
+  emu_condition = COND_NOT_emu;
 };
 
 module = {
@@ -2351,6 +2390,12 @@ module = {
   common = net/ethernet.c;
   common = net/arp.c;
   common = net/netbuff.c;
+  efi = net/efi/net.c;
+  efi = net/efi/http.c;
+  efi = net/efi/pxe.c;
+  efi = net/efi/ip4_config.c;
+  efi = net/efi/ip6_config.c;
+  efi = net/efi/dhcp.c;
 };
 
 module = {
@@ -2400,7 +2445,6 @@ module = {
   enable = i386_xen_pvh;
   enable = i386_efi;
   enable = x86_64_efi;
-  enable = emu;
   enable = xen;
 };
 
@@ -2526,6 +2570,14 @@ module = {
 };
 
 module = {
+  name = pkcs1_v15;
+  common = lib/pkcs1_v15.c;
+
+  cflags = '$(CFLAGS_GCRY) -Wno-redundant-decls -Wno-sign-compare';
+  cppflags = '$(CPPFLAGS_GCRY)';
+};
+
+module = {
   name = all_video;
   common = lib/fake_module.c;
 };
@@ -2549,6 +2601,19 @@ module = {
   name = tpm;
   common = commands/tpm.c;
   efi = commands/efi/tpm.c;
+  enable = efi;
+};
+
+module = {
+  name = tpm2;
+  common = tpm2/args.c;
+  common = tpm2/buffer.c;
+  common = tpm2/module.c;
+  common = tpm2/mu.c;
+  common = tpm2/tpm2.c;
+  common = tpm2/tpm2key.c;
+  common = tpm2/tpm2key_asn1_tab.c;
+  efi = tpm2/tcg2.c;
   enable = efi;
 };
 
@@ -2594,4 +2659,50 @@ module = {
   name = bli;
   efi = commands/bli.c;
   enable = efi;
+};
+
+module = {
+  name = cmdline;
+  common = lib/cmdline.c;
+};
+
+module = {
+  name = asn1;
+  common = lib/libtasn1/lib/decoding.c;
+  common = lib/libtasn1/lib/coding.c;
+  common = lib/libtasn1/lib/element.c;
+  common = lib/libtasn1/lib/structure.c;
+  common = lib/libtasn1/lib/parser_aux.c;
+  common = lib/libtasn1/lib/gstr.c;
+  common = lib/libtasn1/lib/errors.c;
+  common = lib/libtasn1_wrap/wrap.c;
+  cflags = '$(CFLAGS_POSIX) $(CFLAGS_GNULIB)';
+  // -Wno-type-limits comes from libtasn1's configure.ac
+  cppflags = '$(CPPFLAGS_POSIX) $(CPPFLAGS_GNULIB) -I$(srcdir)/lib/libtasn1/lib -Wno-type-limits';
+};
+
+module = {
+  name = test_asn1;
+  common = lib/libtasn1_wrap/tests/CVE-2018-1000654.c;
+  common = lib/libtasn1_wrap/tests/object-id-decoding.c;
+  common = lib/libtasn1_wrap/tests/object-id-encoding.c;
+  common = lib/libtasn1_wrap/tests/octet-string.c;
+  common = lib/libtasn1_wrap/tests/reproducers.c;
+  common = lib/libtasn1_wrap/tests/Test_overflow.c;
+  common = lib/libtasn1_wrap/tests/Test_simple.c;
+  common = lib/libtasn1_wrap/tests/Test_strings.c;
+  common = lib/libtasn1_wrap/wrap_tests.c;
+};
+
+module = {
+  name = prep_loadenv;
+  common = commands/prep_loadenv.c;
+  enable = powerpc_ieee1275;
+  cflags = '$(CFLAGS_POSIX) $(CFLAGS_GNULIB)';
+  cppflags = '$(CPPFLAGS_POSIX) $(CPPFLAGS_GNULIB)';
+};
+
+module = {
+  name = crypttab;
+  common = commands/crypttab.c;
 };

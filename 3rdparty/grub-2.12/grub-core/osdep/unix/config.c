@@ -61,6 +61,131 @@ grub_util_get_localedir (void)
   return LOCALEDIR;
 }
 
+#ifdef __linux__
+static char *
+os_release_get_val (const char *buf, const char *key)
+{
+  const char *ptr = buf;
+  char *ret;
+
+  while (*ptr && grub_isspace(*ptr))
+    ptr++;
+
+  if (*ptr == '#')
+    return NULL;
+
+  if (grub_strncmp (ptr, key, grub_strlen (key)) != 0)
+    return NULL;
+
+  ptr += grub_strlen (key);
+  if (*ptr++ != '=' || *ptr == '\0')
+    return NULL;
+
+  if (*ptr == '"' || *ptr == '\'')
+    {
+      char c = *ptr;
+      int i = 0;
+      char *tmp, *ptmp;
+
+      if (*++ptr == '\0')
+	return NULL;
+
+      tmp = grub_strdup (ptr);
+      if ((ptmp = grub_strrchr (tmp, c)))
+	*ptmp = '\0';
+
+      ret = malloc (grub_strlen (tmp) + 1);
+      ptmp = tmp;
+      while (*ptmp)
+	{
+	  if (*ptmp != '\\' || *(ptmp + 1) != c)
+	    ret[i++] = *ptmp;
+	  ++ptmp;
+	}
+
+      grub_free (tmp);
+      ret[i] = '\0';
+    }
+  else
+    {
+      char *pret;
+
+      ret = grub_strdup (ptr);
+      if ((pret = grub_strchr (ret, ' ')))
+	*pret = '\0';
+    }
+
+  return ret;
+}
+
+static char*
+grub_util_default_distributor (void)
+{
+  char *cfgfile;
+  char buf[1024];
+  FILE *fp = NULL;
+  char *os_name = NULL;
+  char *os_version = NULL;
+
+  cfgfile = grub_util_path_concat (2, GRUB_SYSCONFDIR, "os-release");
+  if (!grub_util_is_regular (cfgfile))
+    {
+      grub_free (cfgfile);
+      cfgfile = grub_util_path_concat (2, "/usr/lib", "os-release");
+      if (!grub_util_is_regular (cfgfile))
+        {
+          grub_free (cfgfile);
+          return NULL;
+        }
+    }
+
+  fp = grub_util_fopen (cfgfile, "r");
+
+  if (!fp)
+    {
+      grub_util_warn (_("cannot open configuration file `%s': %s"),
+		      cfgfile, strerror (errno));
+      grub_free (cfgfile);
+      return NULL;
+    }
+
+  grub_free (cfgfile);
+
+  while (fgets (buf, sizeof (buf), fp))
+    {
+      if (buf[grub_strlen(buf) - 1] == '\n')
+	buf[grub_strlen(buf) - 1] = '\0';
+
+      if (!os_name
+	  && (os_name = os_release_get_val (buf, "NAME")))
+	continue;
+      if (!os_version
+	  && (os_version = os_release_get_val (buf, "VERSION")))
+	continue;
+      if (os_name && os_version)
+	break;
+    }
+
+  fclose (fp);
+
+  if (os_name && os_version)
+    {
+      char *os_name_version;
+
+      os_name_version = grub_xasprintf ("%s %s", os_name, os_version);
+
+      grub_free (os_name);
+      grub_free (os_version);
+
+      return os_name_version;
+    }
+
+  grub_free (os_version);
+
+  return os_name;
+}
+#endif
+
 void
 grub_util_load_config (struct grub_util_config *cfg)
 {
@@ -81,6 +206,19 @@ grub_util_load_config (struct grub_util_config *cfg)
   v = getenv ("GRUB_DISTRIBUTOR");
   if (v)
     cfg->grub_distributor = xstrdup (v);
+
+  v = getenv ("SUSE_BTRFS_SNAPSHOT_BOOTING");
+  if (v)
+    {
+      if (grub_strncmp(v, "true", sizeof ("true") - 1) == 0)
+        {
+          cfg->is_suse_btrfs_snapshot_enabled = 1;
+        }
+      else
+        {
+          cfg->is_suse_btrfs_snapshot_enabled = 0;
+        }
+    }
 
   cfgfile = grub_util_get_config_filename ();
   if (!grub_util_is_regular (cfgfile))
@@ -105,8 +243,8 @@ grub_util_load_config (struct grub_util_config *cfg)
       *ptr++ = *iptr;
     }
 
-  strcpy (ptr, "'; printf \"GRUB_ENABLE_CRYPTODISK=%s\\nGRUB_DISTRIBUTOR=%s\\n\" "
-	  "\"$GRUB_ENABLE_CRYPTODISK\" \"$GRUB_DISTRIBUTOR\"");
+  strcpy (ptr, "'; printf \"GRUB_ENABLE_CRYPTODISK=%s\\nGRUB_DISTRIBUTOR=%s\\nSUSE_BTRFS_SNAPSHOT_BOOTING=%s\\n\" "
+	  "\"$GRUB_ENABLE_CRYPTODISK\" \"$GRUB_DISTRIBUTOR\" \"$SUSE_BTRFS_SNAPSHOT_BOOTING\"");
 
   argv[2] = script;
   argv[3] = '\0';
@@ -125,7 +263,17 @@ grub_util_load_config (struct grub_util_config *cfg)
       waitpid (pid, NULL, 0);
     }
   if (f)
-    return;
+    {
+#ifdef __linux__
+      if (!cfg->grub_distributor || cfg->grub_distributor[0] == '\0')
+	{
+	  if (cfg->grub_distributor)
+	    grub_free (cfg->grub_distributor);
+	  cfg->grub_distributor = grub_util_default_distributor ();
+	}
+#endif
+      return;
+    }
 
   f = grub_util_fopen (cfgfile, "r");
   if (f)
@@ -136,4 +284,13 @@ grub_util_load_config (struct grub_util_config *cfg)
   else
     grub_util_warn (_("cannot open configuration file `%s': %s"),
 		    cfgfile, strerror (errno));
+
+#ifdef __linux__
+  if (!cfg->grub_distributor || cfg->grub_distributor[0] == '\0')
+    {
+      if (cfg->grub_distributor)
+	grub_free (cfg->grub_distributor);
+      cfg->grub_distributor = grub_util_default_distributor ();
+    }
+#endif
 }

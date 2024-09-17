@@ -42,6 +42,8 @@
 #include <grub/emu/config.h>
 #include <grub/util/ofpath.h>
 #include <grub/hfsplus.h>
+#include <grub/time.h>
+#include <grub/lib/envblk.h>
 
 #include <string.h>
 
@@ -66,6 +68,7 @@ static int force_file_id = 0;
 static char *disk_module = NULL;
 static char *efidir = NULL;
 static char *macppcdir = NULL;
+static char *zipldir = NULL;
 static int force = 0;
 static int have_abstractions = 0;
 static int have_cryptodisk = 0;
@@ -79,6 +82,16 @@ static char *label_color;
 static char *label_bgcolor;
 static char *product_version;
 static int add_rs_codes = 1;
+static int suse_enable_tpm = 0;
+
+enum
+  {
+    SIGNED_GRUB_INHIBIT,
+    SIGNED_GRUB_AUTO,
+    SIGNED_GRUB_FORCE
+  };
+
+static int signed_grub_mode = SIGNED_GRUB_AUTO;
 
 enum
   {
@@ -105,7 +118,11 @@ enum
     OPTION_DISK_MODULE,
     OPTION_NO_BOOTSECTOR,
     OPTION_NO_RS_CODES,
+    OPTION_SUSE_ENABLE_TPM,
+    OPTION_SUSE_FORCE_SIGNED,
+    OPTION_SUSE_INHIBIT_SIGNED,
     OPTION_MACPPC_DIRECTORY,
+    OPTION_ZIPL_DIRECTORY,
     OPTION_LABEL_FONT,
     OPTION_LABEL_COLOR,
     OPTION_LABEL_BGCOLOR,
@@ -181,6 +198,11 @@ argp_parser (int key, char *arg, struct argp_state *state)
       efidir = xstrdup (arg);
       return 0;
 
+    case OPTION_ZIPL_DIRECTORY:
+      free (zipldir);
+      zipldir = xstrdup (arg);
+      return 0;
+
     case OPTION_DISK_MODULE:
       free (disk_module);
       disk_module = xstrdup (arg);
@@ -222,6 +244,18 @@ argp_parser (int key, char *arg, struct argp_state *state)
 
     case OPTION_NO_RS_CODES:
       add_rs_codes = 0;
+      return 0;
+
+    case OPTION_SUSE_ENABLE_TPM:
+      suse_enable_tpm = 1;
+      return 0;
+
+    case OPTION_SUSE_FORCE_SIGNED:
+      signed_grub_mode = SIGNED_GRUB_FORCE;
+      return 0;
+
+    case OPTION_SUSE_INHIBIT_SIGNED:
+      signed_grub_mode = SIGNED_GRUB_INHIBIT;
       return 0;
 
     case OPTION_DEBUG:
@@ -285,7 +319,13 @@ static struct argp_option options[] = {
   {"no-rs-codes", OPTION_NO_RS_CODES, 0, 0,
    N_("Do not apply any reed-solomon codes when embedding core.img. "
       "This option is only available on x86 BIOS targets."), 0},
-
+  {"suse-enable-tpm", OPTION_SUSE_ENABLE_TPM, 0, 0, N_("install TPM modules"), 0},
+  {"suse-force-signed", OPTION_SUSE_FORCE_SIGNED, 0, 0,
+   N_("force installation of signed grub" "%s."
+      "This option is only available on ARM64 EFI and powerpc targets."), 0},
+  {"suse-inhibit-signed", OPTION_SUSE_INHIBIT_SIGNED, 0, 0,
+   N_("inhibit installation of signed grub. "
+      "This option is only available on ARM64 EFI and powerpc targets."), 0},
   {"debug", OPTION_DEBUG, 0, OPTION_HIDDEN, 0, 2},
   {"no-floppy", OPTION_NO_FLOPPY, 0, OPTION_HIDDEN, 0, 2},
   {"debug-image", OPTION_DEBUG_IMAGE, N_("STRING"), OPTION_HIDDEN, 0, 2},
@@ -298,6 +338,8 @@ static struct argp_option options[] = {
    N_("use DIR as the EFI System Partition root."), 2},
   {"macppc-directory", OPTION_MACPPC_DIRECTORY, N_("DIR"), 0,
    N_("use DIR for PPC MAC install."), 2},
+  {"zipl-directory", OPTION_ZIPL_DIRECTORY, N_("DIR"), 0,
+   N_("use DIR as the zIPL Boot Partition root."), 2},
   {"label-font", OPTION_LABEL_FONT, N_("FILE"), 0, N_("use FILE as font for label"), 2},
   {"label-color", OPTION_LABEL_COLOR, N_("COLOR"), 0, N_("use COLOR for label"), 2},
   {"label-bgcolor", OPTION_LABEL_BGCOLOR, N_("COLOR"), 0, N_("use COLOR for label background"), 2},
@@ -334,6 +376,8 @@ get_default_platform (void)
 #else
    return NULL;
 #endif
+#elif defined (__s390x__)
+   return "s390x-emu";
 #else
    return NULL;
 #endif
@@ -354,6 +398,22 @@ help_filter (int key, const char *text, void *input __attribute__ ((unused)))
 	char *ret;
 	ret = xasprintf (text, get_default_platform (), plats);
 	free (plats);
+	return ret;
+      }
+    case OPTION_SUSE_FORCE_SIGNED:
+      {
+	const char *t = get_default_platform ();
+	char *ret;
+	if (grub_strcmp (t, "arm64-efi") == 0)
+	  {
+	    char *s = grub_util_path_concat (3, grub_util_get_pkglibdir (), t, "grub.efi");
+	    char *text2 = xasprintf (" [default=%s]", s);
+	    ret = xasprintf (text, text2);
+	    free (text2);
+	    free (s);
+	  }
+	else
+	  ret = xasprintf (text, "");
 	return ret;
       }
     case ARGP_KEY_HELP_POST_DOC:
@@ -510,6 +570,8 @@ have_bootdev (enum grub_install_plat pl)
     case GRUB_INSTALL_PLATFORM_I386_XEN:
     case GRUB_INSTALL_PLATFORM_X86_64_XEN:
     case GRUB_INSTALL_PLATFORM_I386_XEN_PVH:
+
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
       return 0;
 
       /* pacify warning.  */
@@ -546,6 +608,41 @@ probe_cryptodisk_uuid (grub_disk_t disk)
       fprintf (load_cfg_f, "cryptomount -u %s\n",
 	      uuid);
     }
+}
+
+static char *
+cryptodisk_uuids (grub_disk_t disk, int in_recurse)
+{
+  grub_disk_memberlist_t list = NULL, tmp;
+  static char *ret;
+
+  if (!in_recurse)
+    ret = NULL;
+
+  if (disk->dev->disk_memberlist)
+    list = disk->dev->disk_memberlist (disk);
+
+  while (list)
+    {
+      ret = cryptodisk_uuids (list->disk, 1);
+      tmp = list->next;
+      free (list);
+      list = tmp;
+    }
+
+  if (disk->dev->id == GRUB_DISK_DEVICE_CRYPTODISK_ID)
+    {
+      if (!ret)
+        ret = grub_strdup (grub_util_cryptodisk_get_uuid (disk));
+      else
+	{
+	  char *s = grub_xasprintf ("%s %s", grub_util_cryptodisk_get_uuid (disk), ret);
+	  grub_free (ret);
+	  ret = s;
+	}
+    }
+
+  return ret;
 }
 
 static int
@@ -745,34 +842,6 @@ is_prep_partition (grub_device_t dev)
   return 0;
 }
 
-static int
-is_prep_empty (grub_device_t dev)
-{
-  grub_disk_addr_t dsize, addr;
-  grub_uint32_t buffer[32768];
-
-  dsize = grub_disk_native_sectors (dev->disk);
-  for (addr = 0; addr < dsize;
-       addr += sizeof (buffer) / GRUB_DISK_SECTOR_SIZE)
-    {
-      grub_size_t sz = sizeof (buffer);
-      grub_uint32_t *ptr;
-
-      if (sizeof (buffer) / GRUB_DISK_SECTOR_SIZE > dsize - addr)
-	sz = (dsize - addr) * GRUB_DISK_SECTOR_SIZE;
-      grub_disk_read (dev->disk, addr, 0, sz, buffer);
-
-      if (addr == 0 && grub_memcmp (buffer, ELFMAG, SELFMAG) == 0)
-	return 1;
-
-      for (ptr = buffer; ptr < buffer + sz / sizeof (*buffer); ptr++)
-	if (*ptr)
-	  return 0;
-    }
-
-  return 1;
-}
-
 static void
 bless (grub_device_t dev, const char *path, int x86)
 {
@@ -843,6 +912,8 @@ try_open (const char *path)
 }
 #endif
 
+extern int use_relative_path_on_btrfs;
+
 int
 main (int argc, char *argv[])
 {
@@ -863,6 +934,9 @@ main (int argc, char *argv[])
   int efidir_is_mac = 0;
   int is_prep = 0;
   const char *pkgdatadir;
+  char *rootdir_path;
+  char **rootdir_devices;
+  char *efidir_root;
 
   grub_util_host_init (&argc, &argv);
   product_version = xstrdup (PACKAGE_VERSION);
@@ -939,6 +1013,7 @@ main (int argc, char *argv[])
     case GRUB_INSTALL_PLATFORM_I386_XEN:
     case GRUB_INSTALL_PLATFORM_X86_64_XEN:
     case GRUB_INSTALL_PLATFORM_I386_XEN_PVH:
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
       break;
 
     case GRUB_INSTALL_PLATFORM_I386_QEMU:
@@ -990,6 +1065,7 @@ main (int argc, char *argv[])
     case GRUB_INSTALL_PLATFORM_I386_XEN:
     case GRUB_INSTALL_PLATFORM_X86_64_XEN:
     case GRUB_INSTALL_PLATFORM_I386_XEN_PVH:
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
       free (install_device);
       install_device = NULL;
       break;
@@ -1023,6 +1099,73 @@ main (int argc, char *argv[])
   grub_gcry_init_all ();
   grub_hostfs_init ();
   grub_host_init ();
+
+  {
+    grub_device_t rootdir_grub_dev = NULL;
+    char *rootdir_grub_devname = NULL;
+    char *root_fs_name = NULL;
+
+    char *t = grub_util_path_concat (2, "/", rootdir);
+
+#ifdef __linux__
+    if (!grub_can_guess_from_mountinfo (t))
+      {
+	free(t);
+	/* We can safely ignore the root probe here; whichever cannot be
+	 * reliably detected is irrelevant and of no interest */
+	goto skip_root_probe;
+      }
+#endif
+
+    rootdir_path = grub_canonicalize_file_name (t);
+    if (!rootdir_path)
+      grub_util_error (_("failed to get canonical path of `%s'"), t);
+
+    rootdir_devices = grub_guess_root_devices (rootdir_path);
+    if (!rootdir_devices || !rootdir_devices[0])
+      grub_util_error (_("cannot find a device for %s (is /dev mounted?)"),
+		      rootdir_path);
+
+    for (curdev = rootdir_devices; *curdev; curdev++)
+	grub_util_pull_device (*curdev);
+
+    rootdir_grub_devname = grub_util_get_grub_dev (rootdir_devices[0]);
+    if (!rootdir_grub_devname)
+      grub_util_error (_("cannot find a GRUB drive for %s.  Check your device.map"),
+		       rootdir_devices[0]);
+
+    rootdir_grub_dev = grub_device_open (rootdir_grub_devname);
+    if (!rootdir_grub_dev)
+      {
+	root_fs_name = grub_install_get_filesystem (t);
+	if (root_fs_name)
+	  grub_errno = 0;
+      }
+    else
+      {
+	grub_fs_t root_fs = grub_fs_probe (rootdir_grub_dev);
+	if (root_fs)
+	  root_fs_name = grub_strdup (root_fs->name);
+      }
+
+    if (!root_fs_name)
+      grub_util_error ("%s", grub_errmsg);
+
+    if (config.is_suse_btrfs_snapshot_enabled
+	&& root_fs_name
+	&& grub_strncmp(root_fs_name, "btrfs", sizeof ("btrfs") - 1) == 0)
+      use_relative_path_on_btrfs = 1;
+
+    free (root_fs_name);
+    free (t);
+    free (rootdir_grub_devname);
+    if (rootdir_grub_dev)
+      grub_device_close (rootdir_grub_dev);
+  }
+
+#ifdef __linux__
+ skip_root_probe:
+#endif
 
   switch (platform)
     {
@@ -1096,6 +1239,7 @@ main (int argc, char *argv[])
 	}
       if (!efidir)
 	grub_util_error ("%s", _("cannot find EFI directory"));
+      efidir_root = grub_strdup (efidir);
       efidir_device_names = grub_guess_root_devices (efidir);
       if (!efidir_device_names || !efidir_device_names[0])
 	grub_util_error (_("cannot find a device for %s (is /dev mounted?)"),
@@ -1291,6 +1435,20 @@ main (int argc, char *argv[])
 	}
     }
 
+  if (platform == GRUB_INSTALL_PLATFORM_S390X_EMU)
+    {
+      if (!zipldir)
+	{
+	  char *d = grub_util_path_concat (2, bootdir, "zipl");
+	  if (!grub_util_is_directory (d))
+	    {
+	      free (d);
+	      grub_util_error ("%s", _("cannot find zIPL directory"));
+	    }
+	  zipldir = d;
+	}
+    }
+
   size_t ndev = 0;
 
   /* Write device to a variable so we don't have to traverse /dev every time.  */
@@ -1359,6 +1517,9 @@ main (int argc, char *argv[])
   else if (disk_module && disk_module[0])
     grub_install_push_module (disk_module);
 
+  if (suse_enable_tpm && platform == GRUB_INSTALL_PLATFORM_X86_64_EFI)
+    grub_install_push_module ("tpm");
+
   relative_grubdir = grub_make_system_path_relative_to_its_root (grubdir);
   if (relative_grubdir[0] == '\0')
     {
@@ -1413,12 +1574,29 @@ main (int argc, char *argv[])
 
   grub_util_unlink (load_cfg);
 
+  if (platform == GRUB_INSTALL_PLATFORM_X86_64_EFI && have_cryptodisk)
+    {
+      grub_install_push_module ("tpm");
+      load_cfg_f = grub_util_fopen (load_cfg, "wb");
+      have_load_cfg = 1;
+      fprintf (load_cfg_f, "tpm_record_pcrs 0-9\n");
+    }
+
   if (debug_image && debug_image[0])
     {
-      load_cfg_f = grub_util_fopen (load_cfg, "wb");
+      if (!load_cfg_f)
+	load_cfg_f = grub_util_fopen (load_cfg, "wb");
       have_load_cfg = 1;
       fprintf (load_cfg_f, "set debug='%s'\n",
               debug_image);
+    }
+
+  if (use_relative_path_on_btrfs)
+    {
+      if (!load_cfg_f)
+        load_cfg_f = grub_util_fopen (load_cfg, "wb");
+      have_load_cfg = 1;
+      fprintf (load_cfg_f, "set btrfs_relative_path='y'\n");
     }
 
   if (!have_abstractions)
@@ -1543,6 +1721,7 @@ main (int argc, char *argv[])
 		  case GRUB_INSTALL_PLATFORM_I386_XEN:
 		  case GRUB_INSTALL_PLATFORM_X86_64_XEN:
 		  case GRUB_INSTALL_PLATFORM_I386_XEN_PVH:
+		  case GRUB_INSTALL_PLATFORM_S390X_EMU:
 		    grub_util_warn ("%s", _("no hints available for your platform. Expect reduced performance"));
 		    break;
 		    /* pacify warning.  */
@@ -1599,17 +1778,112 @@ main (int argc, char *argv[])
 	    }
 	}
       prefix_drive = xasprintf ("(%s)", grub_drives[0]);
+
+      if (platform == GRUB_INSTALL_PLATFORM_X86_64_EFI
+	  && grub_dev->disk
+	  && grub_dev->disk->partition
+	  && grub_fs->fs_uuid)
+	{
+	  int raid_level;
+	  char *uuid = NULL;
+	  char *escaped_relpath = NULL;
+
+	  raid_level = probe_raid_level (grub_dev->disk);
+	  if (raid_level != 1)
+	    goto out;
+
+	  escaped_relpath = escape (relative_grubdir);
+	  if (!escaped_relpath)
+	    goto out;
+
+	  if (grub_fs->fs_uuid (grub_dev, &uuid) || !uuid)
+	    {
+	      grub_print_error ();
+	      grub_errno = 0;
+	      goto out;
+	    }
+
+	  if (!load_cfg_f)
+	    load_cfg_f = grub_util_fopen (load_cfg, "wb");
+	  have_load_cfg = 1;
+	  fprintf (load_cfg_f, "search --no-floppy --fs-uuid --set=root --hint='%s' %s\n", grub_drives[0], uuid);
+	  fprintf (load_cfg_f, "set prefix=($root)'%s'\n", escaped_relpath);
+	  grub_install_push_module ("search");
+ out:
+	  grub_free (escaped_relpath);
+	}
     }
+
+#ifdef __linux__
+
+  if (use_relative_path_on_btrfs)
+    {
+      char *subvol = NULL;
+      char *mount_path = NULL;
+      grub_uint64_t subvolid = 0;
+
+      if (grub_strcmp (rootdir_devices[0], grub_devices[0]) == 0)
+	subvol = grub_util_get_btrfs_subvol (platdir, &mount_path, &subvolid);
+
+      if (subvol && mount_path)
+	{
+	  grub_uint64_t def_subvolid = 0;
+
+	  grub_free (grub_util_get_btrfs_subvol (rootdir_path, NULL, &def_subvolid));
+
+	  if (def_subvolid)
+	    {
+	      char *rootdir_mount_path = NULL;
+	      if (!load_cfg_f)
+		load_cfg_f = grub_util_fopen (load_cfg, "wb");
+	      have_load_cfg = 1;
+
+	      if (grub_strncmp (rootdir_path, mount_path, grub_strlen (rootdir_path)) == 0)
+		rootdir_mount_path = grub_util_path_concat (2, "/", mount_path + grub_strlen (rootdir_path));
+
+	      if (subvolid != def_subvolid && rootdir_mount_path)
+		fprintf (load_cfg_f, "btrfs-mount-subvol ($root) %s %s\n", rootdir_mount_path, subvol);
+	      free (rootdir_mount_path);
+	    }
+	}
+
+      free (subvol);
+      free (mount_path);
+    }
+
+#endif
 
   char mkimage_target[200];
   const char *core_name = NULL;
+  char *signed_imgfile = NULL;
+  int ppc_sb_state = -1;
 
   switch (platform)
     {
+    case GRUB_INSTALL_PLATFORM_ARM64_EFI:
+
+      if (signed_grub_mode > SIGNED_GRUB_INHIBIT)
+	{
+	  signed_imgfile = grub_util_path_concat (2, grub_install_source_directory, "grub.efi");
+	  if (!grub_util_is_regular (signed_imgfile))
+	    {
+	      if (signed_grub_mode >= SIGNED_GRUB_FORCE)
+		grub_util_error ("signed image `%s' does not exist\n", signed_imgfile);
+	      else
+		{
+		  free (signed_imgfile);
+		  signed_imgfile = NULL;
+		}
+	    }
+	}
+
+      if (signed_imgfile)
+	fprintf (stderr, _("Use signed file in %s for installation.\n"), signed_imgfile);
+
+      /* fallthrough.  */
     case GRUB_INSTALL_PLATFORM_I386_EFI:
     case GRUB_INSTALL_PLATFORM_X86_64_EFI:
     case GRUB_INSTALL_PLATFORM_ARM_EFI:
-    case GRUB_INSTALL_PLATFORM_ARM64_EFI:
     case GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI:
     case GRUB_INSTALL_PLATFORM_RISCV32_EFI:
     case GRUB_INSTALL_PLATFORM_RISCV64_EFI:
@@ -1630,11 +1904,33 @@ main (int argc, char *argv[])
 		grub_install_get_platform_platform (platform));
       break;
 
+
+    case GRUB_INSTALL_PLATFORM_POWERPC_IEEE1275:
+      ppc_sb_state = grub_install_get_powerpc_secure_boot();
+
+      if ((signed_grub_mode >= SIGNED_GRUB_FORCE) || ((signed_grub_mode == SIGNED_GRUB_AUTO) && (ppc_sb_state > 0)))
+	{
+	  signed_imgfile = grub_util_path_concat (2, grub_install_source_directory, "grub.elf");
+	  if (!grub_util_is_regular (signed_imgfile))
+	    {
+	      if ((signed_grub_mode >= SIGNED_GRUB_FORCE) || (ppc_sb_state > 1))
+		grub_util_error ("signed image `%s' does not exist\n", signed_imgfile);
+	      else
+		{
+		  free (signed_imgfile);
+		  signed_imgfile = NULL;
+		}
+	    }
+	}
+
+      if (signed_imgfile)
+	fprintf (stderr, _("Use signed file in %s for installation.\n"), signed_imgfile);
+
+      /* fallthrough.  */
     case GRUB_INSTALL_PLATFORM_I386_COREBOOT:
     case GRUB_INSTALL_PLATFORM_ARM_COREBOOT:
     case GRUB_INSTALL_PLATFORM_I386_MULTIBOOT:
     case GRUB_INSTALL_PLATFORM_I386_IEEE1275:
-    case GRUB_INSTALL_PLATFORM_POWERPC_IEEE1275:
     case GRUB_INSTALL_PLATFORM_I386_XEN:
     case GRUB_INSTALL_PLATFORM_X86_64_XEN:
     case GRUB_INSTALL_PLATFORM_I386_XEN_PVH:
@@ -1661,6 +1957,10 @@ main (int argc, char *argv[])
       strcpy (mkimage_target, "sparc64-ieee1275-raw");
       core_name = "core.img";
       break;
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
+      strcpy (mkimage_target, "grub2-emu");
+      core_name = mkimage_target;
+      break;
       /* pacify warning.  */
     case GRUB_INSTALL_PLATFORM_MAX:
       break;
@@ -1676,12 +1976,75 @@ main (int argc, char *argv[])
 				       core_name);
   char *prefix = xasprintf ("%s%s", prefix_drive ? : "",
 			    relative_grubdir);
+  char *grub_efi_cfg = NULL;
+
+  if ((core_name != mkimage_target) && !signed_imgfile)
   grub_install_make_image_wrap (/* source dir  */ grub_install_source_directory,
 				/*prefix */ prefix,
 				/* output */ imgfile,
 				/* memdisk */ NULL,
 				have_load_cfg ? load_cfg : NULL,
 				/* image target */ mkimage_target, 0);
+  else if (signed_imgfile)
+    {
+      FILE *grub_cfg_f;
+
+      grub_install_copy_file (signed_imgfile, imgfile, 1);
+      grub_efi_cfg = grub_util_path_concat (2, platdir, "grub.cfg");
+      grub_cfg_f = grub_util_fopen (grub_efi_cfg, "wb");
+      if (!grub_cfg_f)
+	grub_util_error (_("Can't create file: %s"), strerror (errno));
+
+      if (have_abstractions)
+	{
+	  fprintf (grub_cfg_f, "set prefix=(%s)%s\n", grub_drives[0], relative_grubdir);
+	  fprintf (grub_cfg_f, "set root=%s\n", grub_drives[0]);
+	}
+      else if (prefix_drive)
+	{
+	  char *uuid = NULL;
+	  if (grub_fs->fs_uuid && grub_fs->fs_uuid (grub_dev, &uuid))
+	    {
+	      grub_print_error ();
+	      grub_errno = 0;
+	      uuid = NULL;
+	    }
+	  if (!uuid)
+	    grub_util_error ("cannot find fs uuid for %s", grub_fs->name);
+
+	  fprintf (grub_cfg_f, "search --fs-uuid --set=root %s\n", uuid);
+	  fprintf (grub_cfg_f, "set prefix=($root)%s\n", relative_grubdir);
+	}
+
+      if (have_load_cfg)
+	{
+	  size_t len;
+	  char *buf;
+
+	  FILE *fp = grub_util_fopen (load_cfg, "rb");
+	  if (!fp)
+	    grub_util_error (_("Can't read file: %s"), strerror (errno));
+
+	  fseek (fp, 0, SEEK_END);
+	  len = ftell (fp);
+	  fseek (fp, 0, SEEK_SET);
+	  buf = xmalloc (len);
+
+	  if (fread (buf, 1, len, fp) != len)
+	    grub_util_error (_("cannot read `%s': %s"), load_cfg, strerror (errno));
+
+	  if (fwrite (buf, 1, len, grub_cfg_f) != len)
+	    grub_util_error (_("cannot write `%s': %s"), grub_efi_cfg, strerror (errno));
+
+	  free (buf);
+	  fclose (fp);
+	}
+
+      fprintf (grub_cfg_f, "source ${prefix}/grub.cfg\n");
+      fclose (grub_cfg_f);
+      free (signed_imgfile);
+      signed_imgfile = NULL;
+    }
   /* Backward-compatibility kludges.  */
   switch (platform)
     {
@@ -1714,6 +2077,10 @@ main (int argc, char *argv[])
 				       /* image target */ mkimage_target, 0);
       }
       break;
+
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
+      break;
+
     case GRUB_INSTALL_PLATFORM_ARM_EFI:
     case GRUB_INSTALL_PLATFORM_ARM64_EFI:
     case GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI:
@@ -1875,17 +2242,45 @@ main (int argc, char *argv[])
 	    {
 	      grub_util_error ("%s", _("the chosen partition is not a PReP partition"));
 	    }
-	  if (is_prep_empty (ins_dev))
+	  if (write_to_disk (ins_dev, imgfile))
+	    grub_util_error ("%s", _("failed to copy Grub to the PReP partition"));
+	  grub_set_install_backup_ponr ();
+
+	  if ((signed_grub_mode >= SIGNED_GRUB_FORCE) || ((signed_grub_mode == SIGNED_GRUB_AUTO) && (ppc_sb_state > 0)))
 	    {
-	      if (write_to_disk (ins_dev, imgfile))
-		grub_util_error ("%s", _("failed to copy Grub to the PReP partition"));
-	      grub_set_install_backup_ponr ();
-	    }
-	  else
-	    {
-	      char *s = xasprintf ("dd if=/dev/zero of=%s", install_device);
-	      grub_util_error (_("the PReP partition is not empty. If you are sure you want to use it, run dd to clear it: `%s'"),
-			       s);
+	      char *uuid = NULL;
+	      grub_envblk_t envblk = NULL;
+	      char *buf;
+	      char *cryptouuid = NULL;
+
+	      if (grub_dev->disk)
+		cryptouuid = cryptodisk_uuids (grub_dev->disk, 0);
+
+	      if (grub_fs->fs_uuid && grub_fs->fs_uuid (grub_dev, &uuid))
+		{
+		  grub_print_error ();
+		  grub_errno = 0;
+		  uuid = NULL;
+		}
+	      buf = grub_envblk_buf (GRUB_ENVBLK_PREP_SIZE);
+	      envblk = grub_envblk_open (buf, GRUB_ENVBLK_PREP_SIZE);
+	      if (uuid)
+		grub_envblk_set (envblk, "ENV_FS_UUID", uuid);
+	      if (cryptouuid)
+		grub_envblk_set (envblk, "ENV_CRYPTO_UUID", cryptouuid);
+	      if (relative_grubdir)
+		grub_envblk_set (envblk, "ENV_GRUB_DIR", relative_grubdir);
+	      if (have_abstractions)
+		grub_envblk_set (envblk, "ENV_HINT", grub_dev->disk->name);
+	      if (use_relative_path_on_btrfs)
+		grub_envblk_set (envblk, "btrfs_relative_path", "1");
+	      if (envblk)
+		{
+		  fprintf (stderr, _("Write environment block to PReP.\n"));
+		  if (grub_disk_write_tail (ins_dev->disk, envblk->size, envblk->buf))
+		    grub_util_error ("%s", _("failed to write environment block to the PReP partition"));
+		}
+	      grub_envblk_close (envblk);
 	    }
 	  grub_device_close (ins_dev);
 	  if (update_nvram)
@@ -1956,9 +2351,13 @@ main (int argc, char *argv[])
 	    {
 	      /* Try to make this image bootable using the EFI Boot Manager, if available.  */
 	      int ret;
-	      ret = grub_install_register_efi (efidir_grub_dev,
+	      grub_disk_t efidir_grub_disk[2];
+	      efidir_grub_disk[0] = efidir_grub_dev->disk;
+	      efidir_grub_disk[1] = NULL;
+	      ret = grub_install_register_efi (efidir_grub_disk,
 					       "\\System\\Library\\CoreServices",
-					       efi_distributor);
+					       efi_distributor,
+					       NULL);
 	      if (ret)
 	        grub_util_error (_("efibootmgr failed to register the boot entry: %s"),
 				 strerror (ret));
@@ -1983,12 +2382,40 @@ main (int argc, char *argv[])
 	grub_set_install_backup_ponr ();
 
 	free (dst);
+	if (grub_efi_cfg)
+	  {
+	    dst = grub_util_path_concat (2, efidir, "grub.cfg");
+	    grub_install_copy_file (grub_efi_cfg, dst, 1);
+	    free (dst);
+	    free (grub_efi_cfg);
+	  }
       }
+      if (!removable)
+	{
+	  const char *f;
+
+	  f = grub_install_efi_removable_fallback (efidir_root, platform);
+	  if (f)
+	    {
+	      char *t = grub_util_path_concat (3, efidir_root, "EFI", "BOOT");
+	      char *dst = grub_util_path_concat (2, t, f);
+
+	      grub_install_mkdir_p (t);
+	      fprintf (stderr, _("Install to %s as fallback.\n"), dst);
+	      grub_install_copy_file (imgfile, dst, 1);
+	      grub_free (t);
+	      grub_free (dst);
+	    }
+	}
       if (!removable && update_nvram)
 	{
 	  char * efifile_path;
 	  char * part;
+	  int raid_level;
 	  int ret;
+	  grub_disk_t *efidir_grub_disk;
+	  grub_disk_memberlist_t list = NULL, cur;
+	  char * force_disk = NULL;
 
 	  /* Try to make this image bootable using the EFI Boot Manager, if available.  */
 	  if (!efi_distributor || efi_distributor[0] == '\0')
@@ -2005,12 +2432,73 @@ main (int argc, char *argv[])
 			  efidir_grub_dev->disk->name,
 			  (part ? ",": ""), (part ? : ""));
 	  grub_free (part);
-	  ret = grub_install_register_efi (efidir_grub_dev,
-					   efifile_path, efi_distributor);
+
+	  raid_level = probe_raid_level (efidir_grub_dev->disk);
+	  if (raid_level >= 0 && raid_level != 1)
+	    grub_util_warn (_("unsupported raid level %d detected for efi system partition"), raid_level);
+	  if (raid_level == 1 && !efidir_grub_dev->disk->partition)
+	    {
+	      const char *raidname = NULL;
+
+	      if (efidir_grub_dev->disk->dev->disk_raidname)
+		raidname = efidir_grub_dev->disk->dev->disk_raidname (efidir_grub_dev->disk);
+	      if (raidname
+		  && (grub_strncmp (raidname, "mdraid09", sizeof ("mdraid09")) == 0
+		      || (grub_strcmp (raidname, "mdraid1x") == 0
+			  && ((struct grub_diskfilter_lv *) efidir_grub_dev->disk->data)->vg->mdraid1x_minor_version == 0)))
+		{
+		  if (efidir_grub_dev->disk->dev->disk_memberlist)
+		    list = efidir_grub_dev->disk->dev->disk_memberlist (efidir_grub_dev->disk);
+		}
+	      else
+		{
+		  grub_util_warn (_("this array has metadata at the start and may not be suitable as a efi system partition."
+		    " please ensure that your firmware understands md/v1.x metadata, or use --metadata=0.90"
+		    " to create the array."));
+		  /* Try to continue regardless metadata, nothing to lose here */
+		  if (efidir_grub_dev->disk->dev->disk_memberlist)
+		    list = efidir_grub_dev->disk->dev->disk_memberlist (efidir_grub_dev->disk);
+		}
+	    }
+	  else if (raid_level == 1)
+	    force_disk = grub_util_get_os_disk (install_device);
+	  if (list)
+	    {
+	      int i;
+	      int ndisk = 0;
+
+	      for (cur = list; cur; cur = cur->next)
+		++ndisk;
+	      efidir_grub_disk = xcalloc (ndisk + 1, sizeof (*efidir_grub_disk));
+	      for (cur = list, i = 0; i < ndisk; cur = cur->next, i++)
+		efidir_grub_disk[i] = cur->disk;
+	      efidir_grub_disk[ndisk] = NULL;
+	    }
+	  else
+	    {
+	      efidir_grub_disk = xcalloc (2, sizeof (*efidir_grub_disk));
+	      efidir_grub_disk[0] = efidir_grub_dev->disk;
+	      efidir_grub_disk[1] = NULL;
+	    }
+	  ret = grub_install_register_efi (efidir_grub_disk,
+					   efifile_path, efi_distributor,
+					   force_disk);
+	  while (list)
+	    {
+	      cur = list;
+	      list = list->next;
+	      grub_free (cur);
+	    }
+	  grub_free (force_disk);
+	  grub_free (efidir_grub_disk);
 	  if (ret)
 	    grub_util_error (_("efibootmgr failed to register the boot entry: %s"),
 			     strerror (ret));
 	}
+      break;
+
+    case GRUB_INSTALL_PLATFORM_S390X_EMU:
+      grub_install_zipl (zipldir, install_bootsector, force);
       break;
 
     case GRUB_INSTALL_PLATFORM_MIPSEL_LOONGSON:
@@ -2033,6 +2521,24 @@ main (int argc, char *argv[])
       break;
     }
 
+  {
+    const char *journaled_fs[] = {"xfs", "ext2", NULL};
+    int i;
+
+    for (i = 0; journaled_fs[i]; ++i)
+      if (grub_strcmp (grub_fs->name, journaled_fs[i]) == 0)
+	{
+	  int retries = 10;
+
+	  /* If the fs is already frozen at that point, we could generally
+	   * expected that it will be soon unfrozen again (assuming some other
+	   * process has frozen it for snapshotting or something), so we may
+	   * as well retry a few (limited) times in a delay loop. */
+	  while (retries-- && !grub_install_sync_fs_journal (grubdir))
+	    grub_sleep (1);
+	  break;
+	}
+  }
   /*
    * Either there are no platform specific code, or it didn't raise
    * ponr. Raise it here, because usually this is already past point

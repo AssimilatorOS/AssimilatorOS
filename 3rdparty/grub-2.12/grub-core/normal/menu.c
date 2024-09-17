@@ -32,6 +32,7 @@
 #include <grub/script_sh.h>
 #include <grub/gfxterm.h>
 #include <grub/dl.h>
+#include <grub/crypttab.h>
 
 /* Time to delay after displaying an error message about a default/fallback
    entry failing to boot.  */
@@ -39,6 +40,8 @@
 
 grub_err_t (*grub_gfxmenu_try_hook) (int entry, grub_menu_t menu,
 				     int nested) = NULL;
+
+#define MENU_INCLUDE_HIDDEN 0x10000
 
 enum timeout_style {
   TIMEOUT_STYLE_MENU,
@@ -80,8 +83,20 @@ grub_menu_get_entry (grub_menu_t menu, int no)
 {
   grub_menu_entry_t e;
 
-  for (e = menu->entry_list; e && no > 0; e = e->next, no--)
-    ;
+  if (no & MENU_INCLUDE_HIDDEN) {
+    no &= ~MENU_INCLUDE_HIDDEN;
+
+    for (e = menu->entry_list; e && no > 0; e = e->next, no--)
+      ;
+  } else {
+    for (e = menu->entry_list; e && no > 0; e = e->next, no--) {
+      /* Skip hidden entries */
+      while (e && e->hidden)
+        e = e->next;
+    }
+    while (e && e->hidden)
+      e = e->next;
+  }
 
   return e;
 }
@@ -93,10 +108,10 @@ get_entry_index_by_hotkey (grub_menu_t menu, int hotkey)
   grub_menu_entry_t entry;
   int i;
 
-  for (i = 0, entry = menu->entry_list; i < menu->size;
+  for (i = 0, entry = menu->entry_list; entry;
        i++, entry = entry->next)
     if (entry->hotkey == hotkey)
-      return i;
+      return i | MENU_INCLUDE_HIDDEN;
 
   return -1;
 }
@@ -212,7 +227,17 @@ grub_menu_execute_entry(grub_menu_entry_t entry, int auto_boot)
   grub_size_t sz = 0;
 
   if (entry->restricted)
-    err = grub_auth_check_authentication (entry->users);
+    {
+      int auth_check = 1;
+      if (entry->users && entry->users[0] == 0)
+	{
+	  const char *unr = grub_env_get ("unrestricted_menu");
+	  if (unr && (unr[0] == '1' || unr[0] == 'y'))
+	    auth_check = 0;
+	}
+      if (auth_check)
+	err = grub_auth_check_authentication (entry->users);
+    }
 
   if (err)
     {
@@ -376,6 +401,15 @@ menu_set_chosen_entry (int entry)
 }
 
 static void
+menu_scroll_chosen_entry (int diren)
+{
+  struct grub_menu_viewer *cur;
+  for (cur = viewers; cur; cur = cur->next)
+    if (cur->scroll_chosen_entry)
+      cur->scroll_chosen_entry (cur->data, diren);
+}
+
+static void
 menu_print_timeout (int timeout)
 {
   struct grub_menu_viewer *cur;
@@ -509,6 +543,10 @@ get_entry_number (grub_menu_t menu, const char *name)
       grub_menu_entry_t e = menu->entry_list;
       int i;
 
+      /* Skip hidden entries */
+      while (e && e->hidden)
+	e = e->next;
+
       grub_errno = GRUB_ERR_NONE;
 
       for (i = 0; e; i++)
@@ -520,6 +558,10 @@ get_entry_number (grub_menu_t menu, const char *name)
 	      break;
 	    }
 	  e = e->next;
+
+	  /* Skip hidden entries */
+	  while (e && e->hidden)
+	    e = e->next;
 	}
 
       if (! e)
@@ -564,6 +606,43 @@ print_countdown (struct grub_term_coordinate *pos, int n)
   grub_refresh ();
 }
 
+/* bsc#956046 - The first entry titled 'Bootable snapshot #$NUM' is inserted on
+   top at runtime to display current snapshot information. If default entry is
+   using number as key to index the entry, the result will be shifted so here we
+   add specical handling to shift it back. We apply this workaround until a better
+   solution can be found. */
+static void
+workaround_snapshot_menu_default_entry (grub_menu_t menu, const char *name, int *default_entry)
+{
+  grub_menu_entry_t entry;
+  if ((entry = grub_menu_get_entry (menu, 0)) &&
+      ((entry->submenu && grub_strncmp (entry->title, "Bootable snapshot", sizeof("Bootable snapshot") - 1) == 0) ||
+       (!entry->submenu && grub_strncmp (entry->title, "Help on bootable snapshot", sizeof("Help on bootable snapshot") - 1) == 0)))
+    {
+      const char *val;
+
+      if (*default_entry == -1 && menu->size > 1)
+	{
+	  *default_entry = 1;
+	  return;
+	}
+
+      val = grub_env_get (name);
+
+      grub_error_push ();
+
+      if (val)
+	grub_strtoul (val, 0, 0);
+
+      if (*default_entry < (menu->size - 1) && grub_errno == GRUB_ERR_NONE)
+	++(*default_entry);
+
+      grub_error_pop ();
+    }
+
+  return;
+}
+
 #define GRUB_MENU_PAGE_SIZE 10
 
 /* Show the menu and handle menu entry selection.  Returns the menu entry
@@ -583,6 +662,8 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot, int *notify_boot)
   *notify_boot = 1;
 
   default_entry = get_entry_number (menu, "default");
+
+  workaround_snapshot_menu_default_entry (menu, "default", &default_entry);
 
   /* If DEFAULT_ENTRY is not within the menu entries, fall back to
      the first entry.  */
@@ -628,6 +709,7 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot, int *notify_boot)
 	  if (grub_key_is_interrupt (key))
 	    {
 	      timeout = -1;
+	      grub_cryptokey_tpmkey_discard();
 	      break;
 	    }
 
@@ -710,6 +792,11 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot, int *notify_boot)
 	      clear_timeout ();
 	    }
 
+	  /* Timeout is interrupted by external input, Forget tpmkey if timeout
+	   * is not cut by enter */
+	  if (c != '\n' && c != '\r')
+	      grub_cryptokey_tpmkey_discard();
+
 	  switch (c)
 	    {
 	    case GRUB_TERM_KEY_HOME:
@@ -756,6 +843,13 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot, int *notify_boot)
 	      else
 		current_entry = menu->size - 1;
 	      menu_set_chosen_entry (current_entry);
+	      break;
+
+	    case GRUB_TERM_CTRL | 'w':
+	      menu_scroll_chosen_entry (1);
+	      break;
+	    case GRUB_TERM_CTRL | 'r':
+	      menu_scroll_chosen_entry (-1);
 	      break;
 
 	    case '\n':

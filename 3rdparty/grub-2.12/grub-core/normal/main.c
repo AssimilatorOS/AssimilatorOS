@@ -34,6 +34,10 @@
 #include <grub/charset.h>
 #include <grub/script_sh.h>
 #include <grub/bufio.h>
+#ifdef GRUB_MACHINE_IEEE1275
+#include <grub/ieee1275/ieee1275.h>
+#endif
+#include <grub/crypttab.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
@@ -276,6 +280,21 @@ grub_normal_execute (const char *config, int nested, int batch)
     {
       menu = read_config_file (config);
 
+#ifdef GRUB_MACHINE_IEEE1275
+      int boot;
+      boot = 0;
+      char *script = NULL;
+      char *dummy[1] = { NULL };
+      if (! grub_ieee1275_cas_reboot (&script) && script)
+        {
+          if (! grub_script_execute_new_scope (script, 0, dummy))
+            boot = 1;
+        }
+      grub_free (script);
+      if (boot)
+        grub_command_execute ("boot", 0, 0);
+#endif
+
       /* Ignore any error.  */
       grub_errno = GRUB_ERR_NONE;
     }
@@ -460,6 +479,7 @@ grub_cmdline_run (int nested, int force_auth)
       return;
     }
 
+  grub_cryptokey_discard ();
   grub_normal_reader_init (nested);
 
   while (1)

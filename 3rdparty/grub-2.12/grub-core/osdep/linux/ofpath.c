@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #ifdef __sparc__
 typedef enum
@@ -136,7 +137,7 @@ trim_newline (char *path)
     *end-- = '\0';
 }
 
-#define MAX_DISK_CAT    64
+#define MAX_DISK_CAT    512
 
 static char *
 find_obppath (const char *sysfs_path_orig)
@@ -208,7 +209,7 @@ find_obppath (const char *sysfs_path_orig)
     }
 }
 
-static char *
+char *
 xrealpath (const char *in)
 {
   char *out;
@@ -223,7 +224,7 @@ xrealpath (const char *in)
   return out;
 }
 
-static char *
+char *
 block_device_get_sysfs_path_and_link(const char *devicenode)
 {
   char *rpath;
@@ -312,6 +313,69 @@ get_basename(char *p)
   return ret;
 }
 
+
+void
+add_filename_to_pile(char *filename, struct ofpath_files_list_root* root){
+    struct ofpath_files_list_node* file;
+
+    file = malloc(sizeof(struct ofpath_files_list_node));
+
+    file->filename = filename;
+
+    if(root->first == NULL){
+      root->items = 1;
+      root->first = file;
+      file->next = NULL;
+    } else {
+      root->items++;
+      file->next = root->first;
+      root->first = file;
+    }
+}
+
+
+void
+find_file(char* filename, char* directory, struct ofpath_files_list_root* root, int max_depth, int depth){
+   struct dirent *ep;
+   struct stat statbuf;
+   DIR *dp;
+
+   if(depth > max_depth){
+           return;
+   }
+
+   if((dp = opendir(directory)) == NULL){
+    
+    return;
+   }
+
+   while((ep = readdir(dp)) != NULL){
+
+     char* full_path = malloc(1024*sizeof(char));
+     snprintf(full_path,1024,"%s/%s",directory,ep->d_name);
+
+     lstat(full_path,&statbuf);
+
+     if(S_ISLNK(statbuf.st_mode)){
+             
+             continue;
+     }
+
+     if(!strcmp(ep->d_name,".") || !strcmp(ep->d_name,"..")){
+       continue;
+     }
+
+     if(!strcmp(ep->d_name,filename)){
+        add_filename_to_pile(full_path, root);
+     }
+
+     find_file(filename, full_path, root, max_depth, depth+1);
+
+   }
+   closedir(dp);
+}
+
+
 static char *
 of_path_of_vdisk(const char *sys_devname __attribute__((unused)),
 		 const char *device,
@@ -350,7 +414,144 @@ of_path_of_ide(const char *sys_devname __attribute__((unused)), const char *devi
   return ret;
 }
 
-#ifdef __sparc__
+char*
+of_find_fc_host(char* host_wwpn){
+
+  FILE* fp;
+  char *buf;
+  char portname_filename[sizeof("port_name")] = "port_name";
+  char devices_path[sizeof("/sys/devices")] = "/sys/devices";
+
+  struct ofpath_files_list_root* portnames_file_list;
+
+  portnames_file_list=malloc(sizeof(*portnames_file_list));
+  portnames_file_list->items=0;
+  portnames_file_list->first=NULL;
+
+  find_file(portname_filename, devices_path, portnames_file_list, 10, 0);
+
+  struct ofpath_files_list_node* node = portnames_file_list->first;
+  while(node != NULL){
+      fp = fopen(node->filename,"r");
+      buf = malloc(sizeof(char)*512);
+      fscanf(fp, "%s", buf);
+      fclose(fp);
+      if((strcmp(buf,host_wwpn) == 0) && grub_strstr(node->filename, "fc_host")){
+	  return node->filename;
+      }
+      node = node->next;
+  }
+
+  return NULL;
+}
+
+void
+of_path_get_nvmeof_adapter_info(char* sysfs_path,
+		                struct ofpath_nvmeof_info* nvmeof_info){
+
+  FILE *fp;
+  char *buf, *buf2, *buf3;
+
+  nvmeof_info->host_wwpn = malloc(sizeof(char)*256);
+  nvmeof_info->target_wwpn = malloc(sizeof(char)*256);
+  nvmeof_info->nqn = malloc(sizeof(char)*256);
+
+  buf = malloc(sizeof(char)*512);
+  snprintf(buf,512,"%s/subsysnqn",sysfs_path);
+  fp = fopen(buf,"r");
+  fscanf(fp, "%s", nvmeof_info->nqn);
+  fclose(fp);
+
+  snprintf(buf,512,"%s/cntlid",sysfs_path);
+  fp = fopen(buf,"r");
+  fscanf(fp, "%u", &(nvmeof_info->cntlid));
+  fclose(fp);
+
+  //snprintf(buf,512,"%s/nsid",sysfs_path); 
+  //fp = fopen(buf,"r");
+  //fscanf(fp, "%u", &(nvmeof_info->nsid));
+  //fclose(fp);
+
+  snprintf(buf,512,"%s/address",sysfs_path);
+  fp = fopen(buf,"r");
+  buf2 = malloc(sizeof(char)*512);
+  fscanf(fp, "%s", buf2);
+  fclose(fp);
+
+  nvmeof_info->host_wwpn = strrchr(buf2,'-')+1;
+
+  buf3=strchr(buf2,'-')+1;
+  buf3=strchr(buf3,'-')+1;
+  nvmeof_info->target_wwpn = buf3;
+  buf3=strchr(buf3,'x')+1;
+  nvmeof_info->target_wwpn = buf3;
+  buf3 = strchr(nvmeof_info->target_wwpn,',');
+  *buf3 = '\0';
+
+
+  free(buf);
+
+  return;
+}
+
+#define MAX_NVME_NSID_DIGITS 6
+
+static char *
+of_path_get_nvme_controller_name_node(const char* devname)
+{
+  char *controller_node, *end;
+
+  controller_node = strdup(devname);
+
+  end = grub_strchr(controller_node+1, 'n');
+
+  if(end != NULL){
+    *end = '\0';
+  }
+
+  return controller_node;
+}
+
+unsigned int
+of_path_get_nvme_nsid(const char* devname)
+{
+  unsigned int nsid;
+  char *sysfs_path, *buf;
+  FILE *fp;
+  
+  buf=malloc(sizeof(char)*512);
+
+  sysfs_path = block_device_get_sysfs_path_and_link (devname);
+
+  snprintf(buf,512,"%s/%s/nsid",sysfs_path,devname);
+  fp = fopen(buf,"r");
+  fscanf(fp, "%u", &(nsid));
+  fclose(fp);
+
+  free(sysfs_path);
+  free(buf);
+
+  return nsid;
+
+}
+
+char *
+nvme_get_syspath(const char *nvmedev)
+{
+  char *sysfs_path, *controller_node;
+  sysfs_path = block_device_get_sysfs_path_and_link (nvmedev);
+  
+  if(strstr(sysfs_path,"nvme-subsystem")){
+    controller_node = of_path_get_nvme_controller_name_node(nvmedev);
+    strcat(sysfs_path,"/");
+    strcat(sysfs_path,controller_node);
+    sysfs_path = xrealpath(sysfs_path);
+  }
+
+  return sysfs_path;
+}
+
+
 static char *
 of_path_of_nvme(const char *sys_devname __attribute__((unused)),
 	        const char *device,
@@ -359,6 +560,7 @@ of_path_of_nvme(const char *sys_devname __attribute__((unused)),
 {
   char *sysfs_path, *of_path, disk[MAX_DISK_CAT];
   const char *digit_string, *part_end;
+  int chars_written;
 
   digit_string = trailing_digits (device);
   part_end = devicenode + strlen (devicenode) - 1;
@@ -378,15 +580,61 @@ of_path_of_nvme(const char *sys_devname __attribute__((unused)),
       /* Remove the p. */
       *end = '\0';
       sscanf (digit_string, "%d", &part);
-      snprintf (disk, sizeof (disk), "/disk@1:%c", 'a' + (part - 1));
-      sysfs_path = block_device_get_sysfs_path_and_link (nvmedev);
+
+      sysfs_path = nvme_get_syspath(nvmedev);
+
+      /* If is a NVMeoF */
+      if(strstr(sysfs_path,"nvme-fabrics")){
+        struct ofpath_nvmeof_info* nvmeof_info;
+        nvmeof_info = malloc(sizeof(*nvmeof_info));
+
+        of_path_get_nvmeof_adapter_info(sysfs_path, nvmeof_info);
+
+        sysfs_path = of_find_fc_host(nvmeof_info->host_wwpn);
+
+        chars_written = snprintf(disk,sizeof(disk),"/nvme-of/controller@%s,%x:nqn=%s",
+                          nvmeof_info->target_wwpn,
+                          0xffff,
+                          nvmeof_info->nqn);
+        
+        unsigned int nsid = of_path_get_nvme_nsid(nvmedev);
+
+        if(nsid){
+          snprintf(disk+chars_written,sizeof(disk) - chars_written,
+			  "/namespace@%x:%d",nsid, part);
+        }
+
+      } else {
+           snprintf (disk, sizeof (disk), "/disk@1:%c", 'a' + (part - 1));
+      }
       free (nvmedev);
     }
   else
     {
       /* We do not have the parition. */
-      snprintf (disk, sizeof (disk), "/disk@1");
-      sysfs_path = block_device_get_sysfs_path_and_link (device);
+      sysfs_path = nvme_get_syspath (device);
+      if(strstr(sysfs_path,"nvme-fabrics")){
+        struct ofpath_nvmeof_info* nvmeof_info;
+        nvmeof_info = malloc(sizeof(*nvmeof_info));
+
+        of_path_get_nvmeof_adapter_info(sysfs_path, nvmeof_info);
+      
+      	sysfs_path = of_find_fc_host(nvmeof_info->host_wwpn);
+
+        chars_written = snprintf(disk,sizeof(disk),"/nvme-of/controller@%s,%x:nqn=%s",
+                          nvmeof_info->target_wwpn,
+                          0xffff,
+                          nvmeof_info->nqn);
+        
+	unsigned int nsid = of_path_get_nvme_nsid(device);
+        if(nsid){
+          snprintf(disk+chars_written,sizeof(disk) - chars_written,
+			  "/namespace@%x",nsid);
+	}
+      } else {
+	      snprintf (disk, sizeof (disk), "/disk@1");
+      }
+
     }
 
   of_path = find_obppath (sysfs_path);
@@ -397,7 +645,37 @@ of_path_of_nvme(const char *sys_devname __attribute__((unused)),
   free (sysfs_path);
   return of_path;
 }
-#endif
+
+static void
+of_fc_port_name(const char *path, const char *subpath, char *port_name)
+{
+  char *bname, *basepath, *p;
+  int fd;
+
+  bname = xmalloc(sizeof(char)*150);
+  basepath = xmalloc(strlen(path));
+
+  /* Generate the path to get port name information from the drive */
+  strncpy(basepath,path,subpath-path);
+  basepath[subpath-path-1] = '\0';
+  p = get_basename(basepath);
+  snprintf(bname,sizeof(char)*150,"%s/fc_transport/%s/port_name",basepath,p);
+
+  /* Read the information from the port name */
+  fd = open (bname, O_RDONLY);
+  if (fd < 0)
+    grub_util_error (_("cannot open `%s': %s"), bname, strerror (errno));
+
+  if (read(fd,port_name,sizeof(char)*19) < 0)
+    grub_util_error (_("cannot read `%s': %s"), bname, strerror (errno));
+
+  sscanf(port_name,"0x%s",port_name);
+
+  close(fd);
+
+  free(bname);
+  free(basepath);
+}
 
 static int
 vendor_is_ATA(const char *path)
@@ -577,6 +855,16 @@ of_path_of_scsi(const char *sys_devname __attribute__((unused)), const char *dev
   digit_string = trailing_digits (device);
   if (strncmp (of_path, "/vdevice/", sizeof ("/vdevice/") - 1) == 0)
     {
+      if(strstr(of_path,"vfc-client"))
+      {
+	char * port_name = xmalloc(sizeof(char)*17);
+	of_fc_port_name(sysfs_path, p, port_name);
+
+	snprintf(disk,sizeof(disk),"/%s@%s", disk_name, port_name);
+	free(port_name);
+      }
+      else
+      {
       unsigned long id = 0x8000 | (tgt << 8) | (bus << 5) | lun;
       if (*digit_string == '\0')
 	{
@@ -590,6 +878,13 @@ of_path_of_scsi(const char *sys_devname __attribute__((unused)), const char *dev
 	  snprintf(disk, sizeof (disk),
 		   "/%s@%04lx000000000000:%c", disk_name, id, 'a' + (part - 1));
 	}
+	}
+    } else if (strstr(of_path,"fibre-channel")||(strstr(of_path,"vfc-client"))){
+	char * port_name = xmalloc(sizeof(char)*17);
+	of_fc_port_name(sysfs_path, p, port_name);
+
+	snprintf(disk,sizeof(disk),"/%s@%s", disk_name, port_name);
+	free(port_name);
     }
   else
     {
@@ -706,12 +1001,73 @@ strip_trailing_digits (const char *p)
   return new;
 }
 
+static char *
+get_slave_from_dm(const char * device){
+  char *curr_device, *tmp;
+  char *directory;
+  char *ret = NULL;
+
+  directory = grub_strdup (device);
+  tmp = get_basename(directory);
+  curr_device = grub_strdup (tmp);
+  *tmp = '\0';
+
+  /* Recursively check for slaves devices so we can find the root device */
+  while ((curr_device[0] == 'd') && (curr_device[1] == 'm') && (curr_device[2] == '-')){
+    DIR *dp;
+    struct dirent *ep;
+    char* device_path;
+
+    device_path = grub_xasprintf ("/sys/block/%s/slaves", curr_device);
+    dp = opendir(device_path);
+    free(device_path);
+
+    if (dp != NULL)
+    {
+      ep = readdir (dp);
+      while (ep != NULL){
+
+	/* avoid some system directories */
+        if (!strcmp(ep->d_name,"."))
+            goto next_dir;
+        if (!strcmp(ep->d_name,".."))
+            goto next_dir;
+
+	free (curr_device);
+	free (ret);
+	curr_device = grub_strdup (ep->d_name);
+	ret = grub_xasprintf ("%s%s", directory, curr_device);
+	break;
+
+        next_dir:
+         ep = readdir (dp);
+         continue;
+      }
+      closedir (dp);
+    }
+    else
+      grub_util_warn (_("cannot open directory `/sys/block/%s/slaves'"), curr_device);
+  }
+
+  free (directory);
+  free (curr_device);
+
+  return ret;
+}
+
 char *
 grub_util_devname_to_ofpath (const char *sys_devname)
 {
-  char *name_buf, *device, *devnode, *devicenode, *ofpath;
+  char *name_buf, *device, *devnode, *devicenode, *ofpath, *realname;
 
   name_buf = xrealpath (sys_devname);
+
+  realname = get_slave_from_dm (name_buf);
+  if (realname)
+    {
+      free (name_buf);
+      name_buf = realname;
+    }
 
   device = get_basename (name_buf);
   devnode = strip_trailing_digits (name_buf);
@@ -730,11 +1086,9 @@ grub_util_devname_to_ofpath (const char *sys_devname)
     /* All the models I've seen have a devalias "floppy".
        New models have no floppy at all. */
     ofpath = xstrdup ("floppy");
-#ifdef __sparc__
   else if (device[0] == 'n' && device[1] == 'v' && device[2] == 'm'
            && device[3] == 'e')
     ofpath = of_path_of_nvme (name_buf, device, devnode, devicenode);
-#endif
   else
     {
       grub_util_warn (_("unknown device type %s"), device);

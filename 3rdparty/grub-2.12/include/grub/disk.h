@@ -147,6 +147,8 @@ struct grub_disk
 
   /* Device-specific data.  */
   void *data;
+
+  int is_crypto_diskfilter;
 };
 typedef struct grub_disk *grub_disk_t;
 
@@ -242,7 +244,12 @@ grub_disk_dev_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data)
 
   for (pull = 0; pull < GRUB_DISK_PULL_MAX; pull++)
     for (p = grub_disk_dev_list; p; p = p->next)
-      if (p->disk_iterate && (p->disk_iterate) (hook, hook_data, pull))
+      if (p->id != GRUB_DISK_DEVICE_MEMDISK_ID && p->disk_iterate && (p->disk_iterate) (hook, hook_data, pull))
+	return 1;
+
+  for (pull = 0; pull < GRUB_DISK_PULL_MAX; pull++)
+    for (p = grub_disk_dev_list; p; p = p->next)
+      if (p->id == GRUB_DISK_DEVICE_MEMDISK_ID && p->disk_iterate && (p->disk_iterate) (hook, hook_data, pull))
 	return 1;
 
   return 0;
@@ -255,6 +262,9 @@ grub_err_t EXPORT_FUNC(grub_disk_read) (grub_disk_t disk,
 					grub_off_t offset,
 					grub_size_t size,
 					void *buf);
+grub_err_t grub_disk_write_tail (grub_disk_t disk,
+			       grub_size_t size,
+			       const void *buf);
 grub_err_t grub_disk_write (grub_disk_t disk,
 			    grub_disk_addr_t sector,
 			    grub_off_t offset,
@@ -313,5 +323,13 @@ void grub_mdraid09_fini (void);
 void grub_mdraid1x_fini (void);
 void grub_diskfilter_fini (void);
 #endif
+
+static inline int
+grub_disk_is_crypto (grub_disk_t disk)
+{
+  return ((disk->is_crypto_diskfilter ||
+	   disk->dev->id == GRUB_DISK_DEVICE_CRYPTODISK_ID) ?
+	  1 : 0);
+}
 
 #endif /* ! GRUB_DISK_HEADER */

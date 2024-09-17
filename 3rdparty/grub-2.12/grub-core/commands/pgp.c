@@ -24,6 +24,7 @@
 #include <grub/file.h>
 #include <grub/command.h>
 #include <grub/crypto.h>
+#include <grub/pkcs1_v15.h>
 #include <grub/i18n.h>
 #include <grub/gcrypt/gcrypt.h>
 #include <grub/pubkey.h>
@@ -145,10 +146,6 @@ const char *hashes[] = {
   [0x0a] = "sha512",
   [0x0b] = "sha224"
 };
-
-struct gcry_pk_spec *grub_crypto_pk_dsa;
-struct gcry_pk_spec *grub_crypto_pk_ecdsa;
-struct gcry_pk_spec *grub_crypto_pk_rsa;
 
 static int
 dsa_pad (gcry_mpi_t *hmpi, grub_uint8_t *hval,
@@ -411,32 +408,7 @@ static int
 rsa_pad (gcry_mpi_t *hmpi, grub_uint8_t *hval,
 	 const gcry_md_spec_t *hash, struct grub_public_subkey *sk)
 {
-  grub_size_t tlen, emlen, fflen;
-  grub_uint8_t *em, *emptr;
-  unsigned nbits = gcry_mpi_get_nbits (sk->mpis[0]);
-  int ret;
-  tlen = hash->mdlen + hash->asnlen;
-  emlen = (nbits + 7) / 8;
-  if (emlen < tlen + 11)
-    return 1;
-
-  em = grub_malloc (emlen);
-  if (!em)
-    return 1;
-
-  em[0] = 0x00;
-  em[1] = 0x01;
-  fflen = emlen - tlen - 3;
-  for (emptr = em + 2; emptr < em + 2 + fflen; emptr++)
-    *emptr = 0xff;
-  *emptr++ = 0x00;
-  grub_memcpy (emptr, hash->asnoid, hash->asnlen);
-  emptr += hash->asnlen;
-  grub_memcpy (emptr, hval, hash->mdlen);
-
-  ret = gcry_mpi_scan (hmpi, GCRYMPI_FMT_USG, em, emlen, 0);
-  grub_free (em);
-  return ret;
+  return grub_crypto_rsa_pad(hmpi, hval, hash, sk->mpis[0]);
 }
 
 struct grub_pubkey_context
@@ -972,7 +944,7 @@ GRUB_MOD_INIT(pgp)
     grub_memset (&pseudo_file, 0, sizeof (pseudo_file));
 
     /* Not an ELF module, skip.  */
-    if (header->type != OBJ_TYPE_PUBKEY)
+    if (header->type != OBJ_TYPE_GPG_PUBKEY)
       continue;
 
     pseudo_file.fs = &pseudo_fs;

@@ -204,7 +204,8 @@ set_efi_variable_bootn (grub_uint16_t n, void *in, grub_size_t len)
 int
 grub_install_register_efi (grub_device_t efidir_grub_dev,
 			   const char *efifile_path,
-			   const char *efi_distributor)
+			   const char *efi_distributor,
+			   const char *force_disk)
 {
   grub_uint16_t *boot_order, *new_boot_order;
   grub_uint16_t *distributor16;
@@ -433,4 +434,16 @@ grub_install_sgi_setup (const char *install_device,
 			const char *imgfile, const char *destname)
 {
   grub_util_error ("%s", _("no SGI routines are available for your platform"));
+}
+
+void
+grub_install_zipl (const char *d, int i, int f)
+{
+  grub_util_error ("%s", _("no zIPL routines are available for your platform"));
+}
+
+char *
+grub_install_get_filesystem (const char *path)
+{
+  return NULL;
 }

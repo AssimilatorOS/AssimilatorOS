@@ -67,6 +67,11 @@
       N_("SBAT metadata"), 0 },						\
   { "disable-shim-lock", GRUB_INSTALL_OPTIONS_DISABLE_SHIM_LOCK, 0, 0,	\
       N_("disable shim_lock verifier"), 0 },				\
+  { "x509key",   'x', N_("FILE"), 0,					\
+      N_("embed FILE as an x509 certificate for signature checking"), 0}, \
+  { "appended-signature-size", GRUB_INSTALL_OPTIONS_APPENDED_SIGNATURE_SIZE,\
+    "SIZE", 0, N_("Add a note segment reserving SIZE bytes for an appended signature"), \
+    1},                                                                 \
   { "verbose", 'v', 0, 0,						\
     N_("print verbose messages."), 1 }
 
@@ -110,6 +115,7 @@ enum grub_install_plat
     GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI,
     GRUB_INSTALL_PLATFORM_RISCV32_EFI,
     GRUB_INSTALL_PLATFORM_RISCV64_EFI,
+    GRUB_INSTALL_PLATFORM_S390X_EMU,
     GRUB_INSTALL_PLATFORM_MAX
   };
 
@@ -129,7 +135,8 @@ enum grub_install_options {
   GRUB_INSTALL_OPTIONS_INSTALL_CORE_COMPRESS,
   GRUB_INSTALL_OPTIONS_DTB,
   GRUB_INSTALL_OPTIONS_SBAT,
-  GRUB_INSTALL_OPTIONS_DISABLE_SHIM_LOCK
+  GRUB_INSTALL_OPTIONS_DISABLE_SHIM_LOCK,
+  GRUB_INSTALL_OPTIONS_APPENDED_SIGNATURE_SIZE
 };
 
 extern char *grub_install_source_directory;
@@ -185,11 +192,12 @@ void
 grub_install_generate_image (const char *dir, const char *prefix,
 			     FILE *out,
 			     const char *outname, char *mods[],
-			     char *memdisk_path, char **pubkey_paths,
-			     size_t npubkeys,
+			     char *memdisk_path,
+			     char **pubkey_paths, size_t npubkeys,
+			     char **x509key_paths, size_t nx509keys,
 			     char *config_path,
 			     const struct grub_install_image_target_desc *image_target,
-			     int note,
+			     int note, size_t appsig_size,
 			     grub_compression_t comp, const char *dtb_file,
 			     const char *sbat_path, const int disable_shim_lock);
 
@@ -225,9 +233,16 @@ const char *
 grub_install_get_default_x86_platform (void);
 
 int
-grub_install_register_efi (grub_device_t efidir_grub_dev,
+grub_install_get_powerpc_secure_boot (void);
+
+int
+grub_install_register_efi (const grub_disk_t *efidir_grub_disk,
 			   const char *efifile_path,
-			   const char *efi_distributor);
+			   const char *efi_distributor,
+			   const char *force_disk);
+
+char *
+build_multi_boot_device(const char *install_device);
 
 void
 grub_install_register_ieee1275 (int is_prep, const char *install_device,
@@ -236,6 +251,12 @@ grub_install_register_ieee1275 (int is_prep, const char *install_device,
 void
 grub_install_sgi_setup (const char *install_device,
 			const char *imgfile, const char *destname);
+
+void
+grub_install_zipl (const char *d, int i, int f);
+
+char *
+grub_install_get_filesystem (const char *path);
 
 int
 grub_install_compress_gzip (const char *src, const char *dest);
@@ -297,4 +318,9 @@ grub_set_install_backup_ponr (void)
 }
 #endif
 
+int
+grub_install_sync_fs_journal (const char *path);
+
+const char *
+grub_install_efi_removable_fallback (const char *efidir, enum grub_install_plat platform);
 #endif

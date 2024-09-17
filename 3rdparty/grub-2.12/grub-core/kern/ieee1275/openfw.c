@@ -302,6 +302,34 @@ grub_ieee1275_map (grub_addr_t phys, grub_addr_t virt, grub_size_t size,
   return args.catch_result;
 }
 
+/* Preallocate IEEE1275_MAX_MAP_RESOURCE map tracks to track the
+ * map regions allocated to us by the firmware. Cannot
+ * dynamically allocate them, since the heap is not set
+ * yet.
+ */
+struct grub_map_track  grub_map_track[IEEE1275_MAX_MAP_RESOURCE];
+int grub_map_track_index=0;
+
+void
+grub_releasemap ()
+{
+  int i=0;
+  for (i=grub_map_track_index-1; i >= 0; i--)
+   grub_ieee1275_release(grub_map_track[i].addr, grub_map_track[i].size);
+  grub_map_track_index = 0;
+  return;
+}
+
+static void
+grub_track_map (grub_addr_t addr, grub_size_t size)
+{
+  if (grub_map_track_index >= IEEE1275_MAX_MAP_RESOURCE)
+   return;
+  grub_map_track[grub_map_track_index].addr = addr;
+  grub_map_track[grub_map_track_index++].size = size;
+  return;
+}
+
 grub_err_t
 grub_claimmap (grub_addr_t addr, grub_size_t size)
 {
@@ -317,6 +345,7 @@ grub_claimmap (grub_addr_t addr, grub_size_t size)
       return grub_errno;
     }
 
+  grub_track_map (addr, size);
   return GRUB_ERR_NONE;
 }
 
@@ -325,6 +354,16 @@ static char *
 grub_ieee1275_get_devargs (const char *path)
 {
   char *colon = grub_strchr (path, ':');
+
+  /* Use the same logic in grub_ieee1275_get_devname for nvme-of arguments */
+  if (grub_strstr(path, "nvme-of"))
+    {
+      char *namespace_split = grub_strstr(path,"/namespace@");
+      if (namespace_split)
+	colon = grub_strchr (namespace_split, ':');
+      else
+	colon = NULL;
+    }
 
   if (! colon)
     return 0;
@@ -339,6 +378,18 @@ grub_ieee1275_get_devname (const char *path)
   char *colon = grub_strchr (path, ':');
   int pathlen = grub_strlen (path);
   struct grub_ieee1275_devalias curalias;
+
+  /* Check some special cases */
+  if(grub_strstr(path, "nvme-of")){
+    char *namespace_split = grub_strstr(path,"/namespace@");
+    if(namespace_split){
+      colon = grub_strchr (namespace_split, ':');
+    } else {
+      colon = NULL;
+    }
+
+  }
+
   if (colon)
     pathlen = (int)(colon - path);
 
@@ -564,6 +615,91 @@ grub_ieee1275_canonicalise_devname (const char *path)
   return NULL;
 }
 
+/* Check if it's a CAS reboot. If so, set the script to be executed.  */
+int
+grub_ieee1275_cas_reboot (char **script)
+{
+  grub_uint32_t ibm_ca_support_reboot;
+  grub_uint32_t ibm_fw_nbr_reboots;
+  char property_value[10];
+  grub_ssize_t actual;
+  grub_ieee1275_ihandle_t options;
+
+  if (grub_ieee1275_finddevice ("/options", &options) < 0)
+    return -1;
+
+  /* Check two properties, one is enough to get cas reboot value */
+  ibm_ca_support_reboot = 0;
+  if (grub_ieee1275_get_integer_property (grub_ieee1275_chosen,
+                                          "ibm,client-architecture-support-reboot",
+                                          &ibm_ca_support_reboot,
+                                          sizeof (ibm_ca_support_reboot),
+                                          &actual) >= 0)
+    grub_dprintf("ieee1275", "ibm,client-architecture-support-reboot: %u\n",
+                 ibm_ca_support_reboot);
+
+  ibm_fw_nbr_reboots = 0;
+  if (grub_ieee1275_get_property (options, "ibm,fw-nbr-reboots",
+                                  property_value, sizeof (property_value),
+                                  &actual) >= 0)
+    {
+      property_value[sizeof (property_value) - 1] = 0;
+      ibm_fw_nbr_reboots = (grub_uint8_t) grub_strtoul (property_value, 0, 10);
+      grub_dprintf("ieee1275", "ibm,fw-nbr-reboots: %u\n", ibm_fw_nbr_reboots);
+    }
+
+  if (ibm_ca_support_reboot || ibm_fw_nbr_reboots)
+    {
+      grub_ssize_t len;
+      char *buf;
+
+      if (grub_ieee1275_get_property_length (options, "boot-last-label", &len)
+		|| len <= 0)
+	{
+	  grub_dprintf ("ieee1275", "boot-last-label missing or invalid\n");
+	  goto out;
+	}
+      /* The returned property string length may not include terminating null byte, and in
+         a bid to avoid out of bound access we allocate one more byte to add it back */
+      buf = grub_malloc ((grub_size_t)len + 1);
+      if (!buf)
+	{
+	  grub_print_error ();
+	  goto out;
+	}
+      if (grub_ieee1275_get_property (options, "boot-last-label", buf, (grub_size_t)len + 1, &actual)
+		|| actual < 0)
+	{
+	  grub_dprintf ("ieee1275", "error while get boot-last-label property\n");
+	  grub_free (buf);
+	  goto out;
+	}
+      /* Add terminating null byte */
+      buf[len] = '\0';
+      *script = buf;
+      return 0;
+    }
+
+out:
+  grub_ieee1275_set_boot_last_label ("");
+
+  return -1;
+}
+
+int grub_ieee1275_set_boot_last_label (const char *text)
+{
+  grub_ieee1275_ihandle_t options;
+  grub_ssize_t actual;
+
+  grub_dprintf("ieee1275", "set boot_last_label (size: %" PRIxGRUB_SIZE ")\n", grub_strlen(text));
+  if (! grub_ieee1275_finddevice ("/options", &options) &&
+      options != (grub_ieee1275_ihandle_t) -1)
+    /* To be on the safe side, set the property string with terminating null byte */
+    grub_ieee1275_set_property (options, "boot-last-label", text,
+                                grub_strlen (text) + 1, &actual);
+  return 0;
+}
+
 char *
 grub_ieee1275_get_boot_dev (void)
 {
@@ -579,7 +715,7 @@ grub_ieee1275_get_boot_dev (void)
       return NULL;
     }
 
-  bootpath = (char *) grub_malloc ((grub_size_t) bootpath_size + 64);
+  bootpath = (char *) grub_malloc ((grub_size_t) bootpath_size + 64 + 256);
   if (! bootpath)
     {
       grub_print_error ();

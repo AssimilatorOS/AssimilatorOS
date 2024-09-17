@@ -27,6 +27,21 @@ export TEXTDOMAINDIR="@localedir@"
 
 . "$pkgdatadir/grub-mkconfig_lib"
 
+if [ "x${SUSE_BTRFS_SNAPSHOT_BOOTING}" = "xtrue" ] &&
+   [ "x${GRUB_FS}" = "xbtrfs" ] ; then
+    cat <<EOF
+set btrfs_relative_path="y"
+export btrfs_relative_path
+EOF
+else
+# Always declare path specification in case of inconsistent declaration
+# elsewhere. (bsc#1209165)
+    cat <<EOF
+set btrfs_relative_path="n"
+export btrfs_relative_path
+EOF
+fi
+
 # Do this as early as possible, since other commands might depend on it.
 # (e.g. the `loadfont' command might need lvm or raid modules)
 for i in ${GRUB_PRELOAD_MODULES} ; do
@@ -43,10 +58,46 @@ if [ "x${GRUB_DEFAULT_BUTTON}" = "xsaved" ] ; then GRUB_DEFAULT_BUTTON='${saved_
 if [ "x${GRUB_TIMEOUT_BUTTON}" = "x" ] ; then GRUB_TIMEOUT_BUTTON="$GRUB_TIMEOUT" ; fi
 
 cat << EOF
-if [ -s \$prefix/grubenv ]; then
+if [ -f \${config_directory}/grubenv ]; then
+  load_env -f \${config_directory}/grubenv
+elif [ -s \$prefix/grubenv ]; then
   load_env
 fi
+
+if [ "\${env_block}" ] ; then
+  set env_block="(\${root})\${env_block}"
+  export env_block
+  load_env -f "\${env_block}"
+fi
+
 EOF
+if [ "`uname -m`" = "s390x" ]; then
+    cat <<EOF
+if [ ! "\$sys_loadparm" ]; then
+    set sys_loadparm=/sys/firmware/ipl/loadparm
+fi
+while [ -f "\$sys_loadparm" ]; do
+    unset loadparm
+    read_file "\$sys_loadparm" loadparm
+    if [ ! "\${loadparm}" ]; then break; fi
+    unset z_gp			# extract grub part
+    regexp -s 2:z_gp '^([^Gg]*)[Gg](.+)$' "\$loadparm"
+    if [ ! "\$z_gp" ]; then break; fi
+    while true; do
+        unset z_1
+        unset z_2	# remap zIPL-compatible "." to  grub's '>'
+        regexp -s 1:z_1 -s 2:z_2 '^([0-9][0-9>]*)\.([0-9][0-9.]*)$' "\$z_gp"
+        if [ ! "\$z_1" -o ! "\$z_2" ]; then break; fi
+        set z_gp="\$z_1>\$z_2"
+    done
+    if [ ! "\$z_gp" ]; then break; fi
+    set next_entry="\$z_gp"
+    unset z_gp
+    unset loadparm
+    break
+done
+EOF
+fi
 if [ "x$GRUB_BUTTON_CMOS_ADDRESS" != "x" ]; then
     cat <<EOF
 if cmostest $GRUB_BUTTON_CMOS_ADDRESS ; then
@@ -55,6 +106,9 @@ elif [ "\${next_entry}" ] ; then
    set default="\${next_entry}"
    set next_entry=
    save_env next_entry
+   if [ "\${env_block}" ] ; then
+     save_env -f "\${env_block}" next_entry
+   fi
    set boot_once=true
 else
    set default="${GRUB_DEFAULT}"
@@ -66,6 +120,9 @@ if [ "\${next_entry}" ] ; then
    set default="\${next_entry}"
    set next_entry=
    save_env next_entry
+   if [ "\${env_block}" ] ; then
+     save_env -f "\${env_block}" next_entry
+   fi
    set boot_once=true
 else
    set default="${GRUB_DEFAULT}"
@@ -93,7 +150,12 @@ fi
 function savedefault {
   if [ -z "\${boot_once}" ]; then
     saved_entry="\${chosen}"
-    save_env saved_entry
+    if [ "\${env_block}" ] ; then
+      save_env -f "\${env_block}" saved_entry
+    else
+      save_env saved_entry
+    fi
+
   fi
 }
 
@@ -185,6 +247,10 @@ EOF
 	fi
 
     cat << EOF
+  if [ "\${grub_platform}" = "efi" ]; then
+    echo "Please press 't' to show the boot menu on this console"
+  fi
+
   set gfxmode=${GRUB_GFXMODE}
   load_video
   insmod gfxterm
@@ -221,7 +287,15 @@ case x${GRUB_TERMINAL_OUTPUT} in
   ;;
   x*)
     cat << EOF
-terminal_output ${GRUB_TERMINAL_OUTPUT}
+
+for i in ${GRUB_TERMINAL_OUTPUT}; do
+  if [ x\${use_append} = xtrue ]; then
+     terminal_output --append \$i
+  elif terminal_output \$i; then
+     use_append=true;
+  fi
+done
+
 EOF
   ;;
 esac
@@ -304,7 +378,9 @@ make_timeout ()
 	style="menu"
     fi
     cat << EOF
-if [ x\$feature_timeout_style = xy ] ; then
+if [ x\${boot_once} = xtrue ]; then
+  set timeout=0
+elif [ x\$feature_timeout_style = xy ] ; then
   set timeout_style=${style}
   set timeout=${timeout}
 EOF
@@ -353,4 +429,22 @@ fi
 
 if [ "x${GRUB_BADRAM}" != "x" ] ; then
   echo "badram ${GRUB_BADRAM}"
+fi
+
+if [ "x${SUSE_BTRFS_SNAPSHOT_BOOTING}" = "xtrue" ] &&
+   [ "x${GRUB_FS}" = "xbtrfs" ] ; then
+    # Note: No $snapshot_num on *read-only* rollback!  (bsc#901487)
+    cat <<EOF
+if [ -n "\$extra_cmdline" ]; then
+  menuentry "Help on bootable snapshot #\$snapshot_num" {
+    echo "Select the default entry of the snapshot boot menu."
+    echo "Examine the snapshot, and if it's OK,"
+    echo "   run 'snapper rollback' and reboot."
+    echo "See 'System Rollback by Booting from Snapshots'"
+    echo "   in the manual for more information."
+    echo "  ** Hit Any Key to return to boot menu **  "
+    read
+  }
+fi
+EOF
 fi

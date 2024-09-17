@@ -34,7 +34,7 @@ dnl "TARGET_" (such as TARGET_CC, TARGET_CFLAGS, etc.) are used for
 dnl the target type. See INSTALL for full list of variables and
 dnl description of the relationships between them.
 
-AC_INIT([GRUB],[2.12],[bug-grub@gnu.org])
+AC_INIT([GRUB2],[2.12],[bug-grub@gnu.org])
 
 AS_CASE(["$ERROR_PLATFORM_NOT_SUPPORT_SSP"],
   [n | no | nO | N | No | NO], [ERROR_PLATFORM_NOT_SUPPORT_SSP=no],
@@ -76,6 +76,7 @@ grub_TRANSFORM([grub-mkpasswd-pbkdf2])
 grub_TRANSFORM([grub-mkrelpath])
 grub_TRANSFORM([grub-mkrescue])
 grub_TRANSFORM([grub-probe])
+grub_TRANSFORM([grub-protect])
 grub_TRANSFORM([grub-reboot])
 grub_TRANSFORM([grub-script-check])
 grub_TRANSFORM([grub-set-default])
@@ -211,9 +212,9 @@ if test x$platform != xemu ; then
    esac
 fi
 
-if test x"$target_cpu-$platform" = xsparc64-emu ; then
-   target_m64=1
-fi
+case x"$target_cpu-$platform" in
+    xsparc64-emu | xs390x-emu) target_m64=1 ;;
+esac
 
 case "$target_os" in
   windows* | mingw32*) target_os=cygwin ;;
@@ -2057,6 +2058,14 @@ fi
 AC_SUBST([LIBZFS])
 AC_SUBST([LIBNVPAIR])
 
+LIBTASN1=
+if test x"$platform" = xefi; then
+  AC_CHECK_LIB([tasn1], [asn1_write_value], [],
+               [AC_MSG_ERROR([Your platform requires libtasn1])])
+  LIBTASN1="-ltasn1"
+fi
+AC_SUBST([LIBTASN1])
+
 LIBS=""
 
 AC_SUBST([FONT_SOURCE])
@@ -2126,6 +2135,7 @@ AC_SUBST(BUILD_LIBM)
 
 AM_CONDITIONAL([COND_real_platform], [test x$platform != xnone])
 AM_CONDITIONAL([COND_emu], [test x$platform = xemu])
+AM_CONDITIONAL([COND_NOT_emu], [test x$platform != xemu])
 AM_CONDITIONAL([COND_arm], [test x$target_cpu = xarm ])
 AM_CONDITIONAL([COND_arm_uboot], [test x$target_cpu = xarm -a x$platform = xuboot])
 AM_CONDITIONAL([COND_arm_coreboot], [test x$target_cpu = xarm -a x$platform = xcoreboot])
@@ -2158,6 +2168,9 @@ AM_CONDITIONAL([COND_sparc64_ieee1275], [test x$target_cpu = xsparc64 -a x$platf
 AM_CONDITIONAL([COND_sparc64_emu], [test x$target_cpu = xsparc64 -a x$platform = xemu])
 AM_CONDITIONAL([COND_x86_64_efi], [test x$target_cpu = xx86_64 -a x$platform = xefi])
 AM_CONDITIONAL([COND_x86_64_xen], [test x$target_cpu = xx86_64 -a x$platform = xxen])
+AM_CONDITIONAL([COND_s390x], [test x$target_cpu = xs390x ])
+AM_CONDITIONAL([COND_NOT_s390x], [test x$target_cpu != xs390x ])
+AM_CONDITIONAL([COND_s390x_emu], [test x$target_cpu = xs390x -a x$platform = xemu])
 
 AM_CONDITIONAL([COND_HOST_HURD], [test x$host_kernel = xhurd])
 AM_CONDITIONAL([COND_HOST_LINUX], [test x$host_kernel = xlinux])

@@ -101,6 +101,12 @@ grub_mini_cmd_dump (struct grub_command *cmd __attribute__ ((unused)),
   if (argc == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "no address specified");
 
+  /* NOCAT filter is applied to prevent cat alike command from revealing file
+   * content, the dump command should also be prohibited to revealing memory
+   * content as well */
+  if (grub_file_filters[GRUB_FILE_FILTER_NOCAT])
+    return grub_error (GRUB_ERR_ACCESS_DENIED, N_("prohibited by security policy"));
+
 #if GRUB_CPU_SIZEOF_VOID_P == GRUB_CPU_SIZEOF_LONG
 #define grub_strtoaddr grub_strtoul
 #else

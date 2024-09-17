@@ -124,6 +124,14 @@ struct grub_luks2_digest
 };
 typedef struct grub_luks2_digest grub_luks2_digest_t;
 
+struct grub_luks2_token_tpm
+{
+  grub_uint64_t idx;
+  grub_uint64_t keyslots;
+  const char    *timestamp;
+};
+typedef struct grub_luks2_token_tpm grub_luks2_token_tpm_t;
+
 gcry_err_code_t AF_merge (const gcry_md_spec_t * hash, grub_uint8_t * src,
 			  grub_uint8_t * dst, grub_size_t blocksize,
 			  grub_size_t blocknumbers);
@@ -244,6 +252,39 @@ luks2_parse_digest (grub_luks2_digest_t *out, const grub_json_t *digest)
   if (grub_json_getsize (&size, &keyslots))
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
 		       "Digest references no keyslots");
+
+  out->keyslots = 0;
+  for (i = 0; i < size; i++)
+    {
+      if (grub_json_getchild (&o, &keyslots, i) ||
+	  grub_json_getuint64 (&bit, &o, NULL))
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, "Invalid keyslot");
+      out->keyslots |= (1 << bit);
+    }
+
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t 
+luks2_parse_token_tpm (grub_luks2_token_tpm_t *out, const grub_json_t *token)
+{
+  grub_json_t keyslots, o;
+  grub_size_t i, size;
+  grub_uint64_t bit;
+  const char *type;
+
+  if (grub_json_getstring (&type, token, "type"))
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Invalid token type");
+  else if (grub_strcmp (type, "grub-tpm2"))
+    return GRUB_ERR_NONE;
+
+  if (grub_json_getvalue (&keyslots, token, "keyslots") ||
+      grub_json_getstring (&out->timestamp, token, "timestamp"))
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Missing token parameters");
+
+  if (grub_json_getsize (&size, &keyslots))
+    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+		       "Token references no keyslots");
 
   out->keyslots = 0;
   for (i = 0; i < size; i++)
@@ -561,13 +602,14 @@ luks2_recover_key (grub_disk_t source,
 {
   grub_uint8_t candidate_key[GRUB_CRYPTODISK_MAX_KEYLEN];
   char cipher[32], *json_header = NULL, *ptr;
-  grub_size_t candidate_key_len = 0, json_idx, size;
+  grub_size_t candidate_key_len = 0, json_idx, size, tsize;
   grub_luks2_header_t header;
   grub_luks2_keyslot_t keyslot;
   grub_luks2_digest_t digest;
   grub_luks2_segment_t segment;
+  grub_luks2_token_tpm_t token_tpm;
   gcry_err_code_t gcry_ret;
-  grub_json_t *json = NULL, keyslots;
+  grub_json_t *json = NULL, keyslots, tokens;
   grub_err_t ret;
 
   if (cargs->key_data == NULL || cargs->key_len == 0)
@@ -605,6 +647,37 @@ luks2_recover_key (grub_disk_t source,
       goto err;
     }
 
+  token_tpm.keyslots = 0;
+  tsize = 0;
+  if (cargs->protectors)
+    {
+      int i;
+      for (i = 0; cargs->protectors[i]; i++)
+	if (grub_strcmp(cargs->protectors[i], "tpm2") == 0) 
+	  break;
+
+      if (!cargs->protectors[i] ||
+	  cargs->key_cache[i].invalid ||
+	  grub_json_getvalue (&tokens, json, "tokens") ||
+	  grub_json_getsize (&tsize, &tokens))
+	grub_dprintf ("luks2", "No valid token or not a tpm2 protector\n");
+    }
+
+  for (json_idx = 0; json_idx < tsize; json_idx++)
+    {
+      grub_json_t token;
+
+      if (grub_json_getchild (&token, &tokens, json_idx) ||
+	  grub_json_getuint64 (&token_tpm.idx, &token, NULL) ||
+	  grub_json_getchild (&token, &token, 0) ||
+	  luks2_parse_token_tpm (&token_tpm, &token))
+	{
+	  grub_dprintf ("luks2", "Could not parse token index %" PRIuGRUB_SIZE "\n", json_idx);
+	  grub_errno = GRUB_ERR_NONE;
+	  continue;
+	}
+    }
+
   if (grub_disk_native_sectors (source) == GRUB_DISK_SIZE_UNKNOWN)
     {
       /* FIXME: Allow use of source disk, and maybe cause errors in read. */
@@ -640,6 +713,10 @@ luks2_recover_key (grub_disk_t source,
 	  grub_dprintf ("luks2", "Ignoring keyslot \"%" PRIuGRUB_UINT64_T "\" due to priority\n", keyslot.idx);
 	  continue;
 	}
+
+      if (token_tpm.keyslots &&
+	  !(token_tpm.keyslots & (1 << keyslot.idx)))
+	continue;
 
       grub_dprintf ("luks2", "Trying keyslot \"%" PRIuGRUB_UINT64_T "\"\n", keyslot.idx);
 

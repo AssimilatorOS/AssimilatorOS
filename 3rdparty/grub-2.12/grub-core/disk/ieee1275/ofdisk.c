@@ -24,9 +24,25 @@
 #include <grub/ieee1275/ofdisk.h>
 #include <grub/i18n.h>
 #include <grub/time.h>
+#include <grub/env.h>
+#include <grub/command.h>
+
+#define RETRY_DEFAULT_TIMEOUT 15
 
 static char *last_devpath;
 static grub_ieee1275_ihandle_t last_ihandle;
+
+#define IEEE1275_DISK_ALIAS "/disk@"
+#define IEEE1275_NVMEOF_DISK_ALIAS "/nvme-of/controller@"
+
+/* Used to check boot_type, print debug message if doesn't match, this can be
+ * useful to measure boot delays */
+static char *boot_type;
+/* Used to restrict fcp to a physical boot path */
+static char *boot_parent;
+/* Knowing the nvmeof in advance to avoid blind open test during iteration to
+ * validate a path */
+static int is_boot_nvmeof;
 
 struct ofdisk_hash_ent
 {
@@ -44,11 +60,14 @@ struct ofdisk_hash_ent
 };
 
 static grub_err_t
-grub_ofdisk_get_block_size (const char *device, grub_uint32_t *block_size,
+grub_ofdisk_get_block_size (grub_uint32_t *block_size,
 			    struct ofdisk_hash_ent *op);
 
 #define OFDISK_HASH_SZ	8
 static struct ofdisk_hash_ent *ofdisk_hash[OFDISK_HASH_SZ];
+
+static void early_log (const char *fmt, ...);
+static void print_early_log (void);
 
 static int
 ofdisk_hash_fn (const char *devpath)
@@ -206,10 +225,353 @@ dev_iterate_real (const char *name, const char *path)
   return;
 }
 
+
+static void
+dev_iterate_fcp_disks(const struct grub_ieee1275_devalias *alias)
+{
+    /* If we are dealing with fcp devices, we need
+     * to find the WWPNs and LUNs to iterate them */
+    grub_ieee1275_ihandle_t ihandle;
+    grub_uint64_t *ptr_targets, *ptr_luns, k, l;
+    unsigned int i, j, pos;
+    char *buf, *bufptr;
+
+    struct set_fcp_targets_args
+    {
+      struct grub_ieee1275_common_hdr common;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
+      grub_ieee1275_cell_t catch_result;
+      grub_ieee1275_cell_t nentries;
+      grub_ieee1275_cell_t table;
+    } args_targets;
+
+    struct set_fcp_luns_args
+    {
+      struct grub_ieee1275_common_hdr common;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
+      grub_ieee1275_cell_t wwpn_h;
+      grub_ieee1275_cell_t wwpn_l;
+      grub_ieee1275_cell_t catch_result;
+      grub_ieee1275_cell_t nentries;
+      grub_ieee1275_cell_t table;
+    } args_luns;
+
+    struct args_ret
+    {
+      grub_uint64_t addr;
+      grub_uint64_t len;
+    };
+
+    if(grub_ieee1275_open (alias->path, &ihandle))
+    {
+      grub_dprintf("disk", "failed to open the disk while iterating FCP disk path=%s\n", alias->path);
+      return;
+    }
+
+    /* Setup the fcp-targets method to call via pfw*/
+    INIT_IEEE1275_COMMON (&args_targets.common, "call-method", 2, 3);
+    args_targets.method = (grub_ieee1275_cell_t) "fcp-targets";
+    args_targets.ihandle = ihandle;
+
+    /* Setup the fcp-luns method to call via pfw */
+    INIT_IEEE1275_COMMON (&args_luns.common, "call-method", 4, 3);
+    args_luns.method = (grub_ieee1275_cell_t) "fcp-luns";
+    args_luns.ihandle = ihandle;
+
+    if (IEEE1275_CALL_ENTRY_FN (&args_targets) == -1)
+    {
+      grub_dprintf("disk", "failed to get the targets while iterating FCP disk path=%s\n", alias->path);
+      grub_ieee1275_close(ihandle);
+      return;
+    }
+
+    buf = grub_malloc (grub_strlen (alias->path) + 32 + 32);
+
+    if (!buf)
+    {
+      grub_ieee1275_close(ihandle);
+      return;
+    }
+
+    bufptr = grub_stpcpy (buf, alias->path);
+
+    /* Iterate over entries returned by pfw. Each entry contains a
+     * pointer to wwpn table and his length. */
+    struct args_ret *targets_table = (struct args_ret *)(args_targets.table);
+    for (i=0; i< args_targets.nentries; i++)
+    {
+      ptr_targets = (grub_uint64_t*)(grub_uint32_t) targets_table[i].addr;
+      /* Iterate over all wwpns in given table */
+      for(k=0;k<targets_table[i].len;k++)
+      {
+        args_luns.wwpn_l = (grub_ieee1275_cell_t) (*ptr_targets);
+        args_luns.wwpn_h = (grub_ieee1275_cell_t) (*ptr_targets >> 32);
+        pos=grub_snprintf (bufptr, 32, "/disk@%" PRIxGRUB_UINT64_T,
+                                                *ptr_targets++);
+        /* Get the luns for given wwpn target */
+        if (IEEE1275_CALL_ENTRY_FN (&args_luns) == -1)
+        {
+          grub_dprintf("disk", "failed to get the LUNS while iterating FCP disk path=%s\n", buf);
+          grub_ieee1275_close (ihandle);
+          grub_free (buf);
+          return;
+        }
+
+        struct args_ret *luns_table = (struct args_ret *)(args_luns.table);
+
+        /* Iterate over all LUNs */
+        for(j=0;j<args_luns.nentries; j++)
+        {
+          ptr_luns = (grub_uint64_t*) (grub_uint32_t) luns_table[j].addr;
+          for(l=0;l<luns_table[j].len;l++)
+          {
+            grub_snprintf (&bufptr[pos], 30, ",%" PRIxGRUB_UINT64_T,
+                                                       *ptr_luns++);
+            dev_iterate_real(buf,buf);
+          }
+        }
+
+      }
+    }
+
+    grub_ieee1275_close (ihandle);
+    grub_free (buf);
+    return;
+
+}
+
+static void
+dev_iterate_fcp_nvmeof (const struct grub_ieee1275_devalias *alias)
+{
+    
+    
+    char *bufptr;
+    grub_ieee1275_ihandle_t ihandle;
+
+
+    // Create the structs for the parameters passing to PFW
+    struct nvme_args_
+    {
+      struct grub_ieee1275_common_hdr common;
+      grub_ieee1275_cell_t method;
+      grub_ieee1275_cell_t ihandle;
+      grub_ieee1275_cell_t catch_result;
+      grub_ieee1275_cell_t nentries;
+      grub_ieee1275_cell_t table;
+    } nvme_discovery_controllers_args, nvme_controllers_args, nvme_namespaces_args;
+
+
+    // Create the structs for the results from PFW
+
+    struct discovery_controllers_table_struct_
+    {
+      grub_uint64_t table[256];
+      grub_uint32_t len;
+    } discovery_controllers_table;
+
+    /* struct nvme_controllers_table_entry
+     * this the return of nvme-controllers method tables, containing:
+     * - 2-byte controller ID
+     * - 256-byte transport address string
+     * - 256-byte field containing null-terminated NVM subsystem NQN string up to 223 characters
+     */
+    struct nvme_controllers_table_entry_
+    {
+      grub_uint16_t id;
+      char wwpn[256];
+      char nqn[256];
+    };
+    
+    struct nvme_controllers_table_entry_* nvme_controllers_table = grub_malloc(sizeof(struct nvme_controllers_table_entry_)*256);
+    
+    grub_uint32_t nvme_controllers_table_entries;
+
+    struct nvme_controllers_table_entry_real
+    {
+      grub_uint16_t id;
+      char wwpn[256];
+      char nqn[256];
+    };
+
+    /* Allocate memory for building the NVMeoF path */
+    char *buf = grub_malloc (grub_strlen (alias->path) + 512);
+    if (!buf)
+    {
+      grub_ieee1275_close(ihandle);
+      return;
+    }
+
+    /* Copy the alias->path to buf so we can work with */
+    bufptr = grub_stpcpy (buf, alias->path);
+    grub_snprintf (bufptr, 32, "/nvme-of");
+
+    /* 
+     *  Open the nvme-of layer
+     *  Ex.  /pci@bus/fibre-channel@@dev,func/nvme-of
+     */
+    if(grub_ieee1275_open (buf, &ihandle))
+    {
+      grub_dprintf("disk", "failed to open the disk while iterating FCP disk path=%s\n", buf);
+      return;
+    }
+
+    /*
+     * Call to nvme-discovery-controllers method from the nvme-of layer
+     * to get a list of the NVMe discovery controllers per the binding
+     */
+
+    INIT_IEEE1275_COMMON (&nvme_discovery_controllers_args.common, "call-method", 2, 2);
+    nvme_discovery_controllers_args.method = (grub_ieee1275_cell_t) "nvme-discovery-controllers";
+    nvme_discovery_controllers_args.ihandle = ihandle;
+
+    if (IEEE1275_CALL_ENTRY_FN (&nvme_discovery_controllers_args) == -1)
+    {
+      grub_dprintf("disk", "failed to get the targets while iterating FCP disk path=%s\n", buf);
+      grub_ieee1275_close(ihandle);
+      return;
+    }
+
+    /* After closing the device, the info is lost. So lets copy each buffer in the buffers table */
+
+    discovery_controllers_table.len = (grub_uint32_t) nvme_discovery_controllers_args.nentries;
+
+    unsigned int i=0;
+    for(i = 0; i < discovery_controllers_table.len; i++){
+	    discovery_controllers_table.table[i] = ((grub_uint64_t*)nvme_discovery_controllers_args.table)[i];
+    }
+
+    grub_ieee1275_close(ihandle); 
+ 
+    grub_dprintf("ofdisk","NVMeoF: Found %d discovery controllers\n",discovery_controllers_table.len);
+
+    /* For each nvme discovery controller */
+    int current_buffer_index;
+    for(current_buffer_index = 0; current_buffer_index < (int) discovery_controllers_table.len; current_buffer_index++){
+
+    
+        grub_snprintf (bufptr, 64, "/nvme-of/controller@%" PRIxGRUB_UINT64_T ",ffff",
+                                                discovery_controllers_table.table[current_buffer_index]);
+
+        grub_dprintf("ofdisk","nvmeof controller=%s\n",buf);
+
+        if(grub_ieee1275_open (buf, &ihandle))
+        {
+           grub_dprintf("ofdisk", "failed to open the disk while getting nvme-controllers  path=%s\n", buf);
+           continue;
+         }
+
+        
+	INIT_IEEE1275_COMMON (&nvme_controllers_args.common, "call-method", 2, 2);
+        nvme_controllers_args.method = (grub_ieee1275_cell_t) "nvme-controllers";
+        nvme_controllers_args.ihandle = ihandle;
+        nvme_controllers_args.catch_result = 0;
+
+
+	if (IEEE1275_CALL_ENTRY_FN (&nvme_controllers_args) == -1)
+         {
+          grub_dprintf("ofdisk", "failed to get the nvme-controllers while iterating FCP disk path\n");
+          grub_ieee1275_close(ihandle);
+          continue;
+         }
+
+
+	/* Copy the buffer list to nvme_controllers_table */
+	nvme_controllers_table_entries = ((grub_uint32_t) nvme_controllers_args.nentries);
+	struct nvme_controllers_table_entry_* nvme_controllers_table_ = (struct nvme_controllers_table_entry_*) nvme_controllers_args.table;
+
+	for(i = 0; i < nvme_controllers_table_entries; i++){
+		nvme_controllers_table[i].id = (grub_uint16_t) nvme_controllers_table_[i].id;
+		grub_strcpy(nvme_controllers_table[i].wwpn, nvme_controllers_table_[i].wwpn);
+		grub_strcpy(nvme_controllers_table[i].nqn, nvme_controllers_table_[i].nqn);
+	}
+
+	grub_ieee1275_close(ihandle);
+
+	int nvme_controller_index;
+        int bufptr_pos2;
+        grub_dprintf("ofdisk","NVMeoF: found %d nvme controllers\n",(int) nvme_controllers_args.nentries);
+
+	/* For each nvme controller */
+        for(nvme_controller_index = 0; nvme_controller_index < (int) nvme_controllers_args.nentries; nvme_controller_index++){
+           /* Open the nvme controller
+            *       /pci@bus/fibre-channel@dev,func/nvme-of/controller@transport-addr,ctlr-id:nqn=tgt-subsystem-nqn
+            */
+
+           bufptr_pos2 = grub_snprintf (bufptr, 512, "/nvme-of/controller@%s,ffff:nqn=%s",
+                                                nvme_controllers_table[nvme_controller_index].wwpn, nvme_controllers_table[nvme_controller_index].nqn);
+
+	   grub_dprintf("ofdisk","NVMeoF: nvmeof controller=%s\n",buf);
+
+           if(grub_ieee1275_open (buf, &ihandle)){
+              grub_dprintf("ofdisk","failed to open the path=%s\n",buf);
+	      continue;
+	   }
+
+           INIT_IEEE1275_COMMON (&nvme_namespaces_args.common, "call-method", 2, 2);
+           nvme_namespaces_args.method = (grub_ieee1275_cell_t) "get-namespace-list";
+           nvme_namespaces_args.ihandle = ihandle;
+           nvme_namespaces_args.catch_result = 0;
+
+  	   if (IEEE1275_CALL_ENTRY_FN (&nvme_namespaces_args) == -1)
+           {
+            grub_dprintf("ofdisk", "failed to get the nvme-namespace-list while iterating FCP disk path\n");
+            grub_ieee1275_close(ihandle);
+            continue;
+           }
+
+           grub_uint32_t *namespaces = (grub_uint32_t*) nvme_namespaces_args.table;
+	   grub_dprintf("ofdisk","NVMeoF: found %d namespaces\n",(int)nvme_namespaces_args.nentries);
+	   
+	   grub_ieee1275_close(ihandle);
+
+	   grub_uint32_t namespace_index = 0;
+	   for(namespace_index=0; namespace_index < nvme_namespaces_args.nentries; namespace_index++){
+		 grub_snprintf (bufptr+bufptr_pos2, 512, "/namespace@%"PRIxGRUB_UINT32_T,namespaces[namespace_index]);
+		 grub_dprintf("ofdisk","NVMeoF: namespace=%s\n",buf);
+		 dev_iterate_real(buf,buf);
+           }
+
+	   dev_iterate_real(buf,buf); 
+	}
+    }
+    grub_free(buf);
+    return;
+}
+
 static void
 dev_iterate (const struct grub_ieee1275_devalias *alias)
 {
-  if (grub_strcmp (alias->type, "vscsi") == 0)
+  if (grub_strcmp (alias->type, "fcp") == 0)
+  {
+    if (boot_parent &&
+	grub_strcmp (boot_parent, alias->path) != 0)
+      {
+	grub_dprintf ("ofdisk", "Skipped device: %s, doesn't match boot_parent %s\n",
+	    alias->path, boot_parent);
+	goto iter_children;
+      }
+
+    /* Allow set boot_parent and boot_type to NULL to force iteration */
+    if (!boot_parent)
+      {
+	grub_dprintf ("ofdisk", "iterate %s\n", alias->path);
+	dev_iterate_fcp_nvmeof(alias);
+	dev_iterate_fcp_disks(alias);
+      }
+    else if (is_boot_nvmeof)
+      {
+	grub_dprintf ("ofdisk", "iterate nvmeof: %s\n", alias->path);
+	dev_iterate_fcp_nvmeof(alias);
+      }
+    else
+      {
+	grub_dprintf ("ofdisk", "iterate fcp: %s\n", alias->path);
+	dev_iterate_fcp_disks(alias);
+      }
+  }
+  else if (grub_strcmp (alias->type, "vscsi") == 0)
     {
       static grub_ieee1275_ihandle_t ihandle;
       struct set_color_args
@@ -224,6 +586,13 @@ dev_iterate (const struct grub_ieee1275_devalias *alias)
       args;
       char *buf, *bufptr;
       unsigned i;
+
+      if (boot_type &&
+	  grub_strcmp (boot_type, alias->type) != 0)
+	{
+	  grub_dprintf ("ofdisk", "WARN: device: %s, type %s not match boot_type %s\n",
+	      alias->path, alias->type, boot_type);
+	}
 
       if (grub_ieee1275_open (alias->path, &ihandle))
 	return;
@@ -288,6 +657,13 @@ dev_iterate (const struct grub_ieee1275_devalias *alias)
       grub_uint16_t table_size;
       grub_ieee1275_ihandle_t ihandle;
 
+      if (boot_type &&
+	  grub_strcmp (boot_type, alias->type) != 0)
+	{
+	  grub_dprintf ("ofdisk", "WARN: device: %s, type %s not match boot_type %s\n",
+	      alias->path, alias->type, boot_type);
+	}
+
       buf = grub_malloc (grub_strlen (alias->path) +
                          sizeof ("/disk@7766554433221100"));
       if (!buf)
@@ -347,6 +723,7 @@ dev_iterate (const struct grub_ieee1275_devalias *alias)
       return;
     }
 
+ iter_children:
   {
     struct grub_ieee1275_devalias child;
 
@@ -376,10 +753,11 @@ grub_ofdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 {
   unsigned i;
 
-  if (pull != GRUB_DISK_PULL_NONE)
+  if (pull > GRUB_DISK_PULL_REMOVABLE)
     return 0;
 
-  scan ();
+  if (pull == GRUB_DISK_PULL_REMOVABLE)
+    scan ();
 
   for (i = 0; i < ARRAY_SIZE (ofdisk_hash); i++)
     {
@@ -417,6 +795,12 @@ grub_ofdisk_iterate (grub_disk_dev_iterate_hook_t hook, void *hook_data,
 	  if (!ent->is_boot && ent->is_removable)
 	    continue;
 
+	  if (pull == GRUB_DISK_PULL_NONE && !ent->is_boot)
+	    continue;
+
+	  if (pull == GRUB_DISK_PULL_REMOVABLE && ent->is_boot)
+	    continue;
+
 	  if (hook (ent->grub_shortest, hook_data))
 	    return 1;
 	}
@@ -452,7 +836,7 @@ compute_dev_path (const char *name)
 }
 
 static grub_err_t
-grub_ofdisk_open (const char *name, grub_disk_t disk)
+grub_ofdisk_open_real (const char *name, grub_disk_t disk)
 {
   grub_ieee1275_phandle_t dev;
   char *devpath;
@@ -461,6 +845,7 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
   grub_ssize_t actual;
   grub_uint32_t block_size = 0;
   grub_err_t err;
+  struct ofdisk_hash_ent *op;
 
   if (grub_strncmp (name, "ieee1275/", sizeof ("ieee1275/") - 1) != 0)
       return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
@@ -470,6 +855,35 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
     return grub_errno;
 
   grub_dprintf ("disk", "Opening `%s'.\n", devpath);
+
+  op = ofdisk_hash_find (devpath);
+  if (!op)
+    op = ofdisk_hash_add (devpath, NULL);
+  if (!op)
+    {
+      grub_free (devpath);
+      return grub_errno;
+    }
+
+  /* Check if the call to open is the same to the last disk already opened */
+  if (last_devpath && !grub_strcmp(op->open_path,last_devpath))
+  {
+      goto finish;
+  }
+
+ /* If not, we need to close the previous disk and open the new one */
+  else {
+    if (last_ihandle){
+        grub_ieee1275_close (last_ihandle);
+    }
+    last_ihandle = 0;
+    last_devpath = NULL;
+
+    grub_ieee1275_open (op->open_path, &last_ihandle);
+    if (! last_ihandle)
+      return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "can't open device");
+    last_devpath = op->open_path;
+  }
 
   if (grub_ieee1275_finddevice (devpath, &dev))
     {
@@ -491,25 +905,18 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
       return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a block device");
     }
 
+
+  finish:
   /* XXX: There is no property to read the number of blocks.  There
      should be a property `#blocks', but it is not there.  Perhaps it
      is possible to use seek for this.  */
   disk->total_sectors = GRUB_DISK_SIZE_UNKNOWN;
 
   {
-    struct ofdisk_hash_ent *op;
-    op = ofdisk_hash_find (devpath);
-    if (!op)
-      op = ofdisk_hash_add (devpath, NULL);
-    if (!op)
-      {
-        grub_free (devpath);
-        return grub_errno;
-      }
     disk->id = (unsigned long) op;
     disk->data = op->open_path;
 
-    err = grub_ofdisk_get_block_size (devpath, &block_size, op);
+    err = grub_ofdisk_get_block_size (&block_size, op);
     if (err)
       {
         grub_free (devpath);
@@ -525,16 +932,59 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
   return 0;
 }
 
+static grub_uint64_t
+grub_ofdisk_disk_timeout (grub_disk_t disk)
+{
+  grub_uint64_t retry;
+  const char *timeout = grub_env_get ("ofdisk_retry_timeout");
+
+  if (!(grub_strstr (disk->name, "fibre-channel@") ||
+      grub_strstr (disk->name, "vfc-client")) ||
+      grub_strstr(disk->name, "nvme-of"))
+    {
+      /* Do not retry in case of non network drives */
+      return 0;
+    }
+
+  if (timeout != NULL)
+    {
+       retry = grub_strtoul (timeout, 0, 10);
+       if (grub_errno != GRUB_ERR_NONE)
+         {
+           grub_errno = GRUB_ERR_NONE;
+           return RETRY_DEFAULT_TIMEOUT;
+         }
+       if (retry)
+         return retry;
+    }
+  return RETRY_DEFAULT_TIMEOUT;
+}
+
+static grub_err_t
+grub_ofdisk_open (const char *name, grub_disk_t disk)
+{
+  grub_err_t err;
+  grub_uint64_t timeout = grub_get_time_ms () + (grub_ofdisk_disk_timeout (disk) * 1000);
+  _Bool cont;
+  do
+    {
+      err = grub_ofdisk_open_real (name, disk);
+      cont = grub_get_time_ms () < timeout;
+      if (err == GRUB_ERR_UNKNOWN_DEVICE && cont)
+        {
+          grub_dprintf ("ofdisk","Failed to open disk %s. Retrying...\n", name);
+          grub_errno = GRUB_ERR_NONE;
+        }
+      else
+          break;
+      grub_millisleep (1000);
+    } while (cont);
+  return err;
+}
+
 static void
 grub_ofdisk_close (grub_disk_t disk)
 {
-  if (disk->data == last_devpath)
-    {
-      if (last_ihandle)
-	grub_ieee1275_close (last_ihandle);
-      last_ihandle = 0;
-      last_devpath = NULL;
-    }
   disk->data = 0;
 }
 
@@ -568,7 +1018,7 @@ grub_ofdisk_prepare (grub_disk_t disk, grub_disk_addr_t sector)
 }
 
 static grub_err_t
-grub_ofdisk_read (grub_disk_t disk, grub_disk_addr_t sector,
+grub_ofdisk_read_real (grub_disk_t disk, grub_disk_addr_t sector,
 		  grub_size_t size, char *buf)
 {
   grub_err_t err;
@@ -585,6 +1035,29 @@ grub_ofdisk_read (grub_disk_t disk, grub_disk_addr_t sector,
 		       disk->name);
 
   return 0;
+}
+
+static grub_err_t
+grub_ofdisk_read (grub_disk_t disk, grub_disk_addr_t sector,
+		  grub_size_t size, char *buf)
+{
+  grub_err_t err;
+  grub_uint64_t timeout = grub_get_time_ms () + (grub_ofdisk_disk_timeout (disk) * 1000);
+  _Bool cont;
+  do
+    {
+      err = grub_ofdisk_read_real (disk, sector, size, buf);
+      cont = grub_get_time_ms () < timeout;
+      if (err == GRUB_ERR_UNKNOWN_DEVICE && cont)
+        {
+          grub_dprintf ("ofdisk","Failed to read disk %s. Retrying...\n", (char*)disk->data);
+          grub_errno = GRUB_ERR_NONE;
+        }
+      else
+          break;
+      grub_millisleep (1000);
+     } while (cont);
+  return err;
 }
 
 static grub_err_t
@@ -618,6 +1091,90 @@ static struct grub_disk_dev grub_ofdisk_dev =
     .disk_write = grub_ofdisk_write,
     .next = 0
   };
+
+static char *
+get_parent_devname (const char *devname, int *is_nvmeof)
+{
+  char *parent, *pptr;
+
+  if (is_nvmeof)
+    *is_nvmeof = 0;
+
+  parent = grub_strdup (devname);
+
+  if (parent == NULL)
+    {
+      grub_print_error ();
+      return NULL;
+    }
+
+  pptr = grub_strstr (parent, IEEE1275_DISK_ALIAS);
+
+  if (pptr != NULL)
+    {
+      *pptr = '\0';
+      return parent;
+    }
+
+  pptr = grub_strstr (parent, IEEE1275_NVMEOF_DISK_ALIAS);
+
+  if (pptr != NULL)
+    {
+      *pptr = '\0';
+      if (is_nvmeof)
+	*is_nvmeof = 1;
+      return parent;
+    }
+
+  return parent;
+}
+
+
+static int
+is_canonical (const char *path)
+{
+  if (grub_strstr (path, IEEE1275_DISK_ALIAS) ||
+      grub_strstr (path, IEEE1275_NVMEOF_DISK_ALIAS))
+    return 1;
+  else
+    return 0;
+}
+
+static char *
+get_boot_device_parent (const char *bootpath, int *is_nvmeof)
+{
+  char *canon, *parent;
+
+  if (is_canonical (bootpath))
+    {
+      early_log ("Use %s as canonical\n", bootpath);
+      canon = grub_strdup (bootpath);
+    }
+  else
+    {
+      char *dev;
+
+      dev = grub_ieee1275_get_aliasdevname (bootpath);
+      canon = grub_ieee1275_canonicalise_devname (dev);
+      early_log ("bootpath: %s \n", bootpath);
+      early_log ("alias: %s\n", dev);
+      early_log ("canonical: %s\n", canon);
+    }
+
+  if (!canon)
+    {
+      /* This should not happen. */
+      grub_error (GRUB_ERR_BAD_DEVICE, "canonicalise devname failed");
+      grub_print_error ();
+      return NULL;
+    }
+
+  parent = get_parent_devname (canon, is_nvmeof);
+  early_log ("%s is parent of %s\n", parent, canon);
+
+  grub_free (canon);
+  return parent;
+}
 
 static void
 insert_bootpath (void)
@@ -654,6 +1211,12 @@ insert_bootpath (void)
       char *device = grub_ieee1275_get_devname (bootpath);
       op = ofdisk_hash_add (device, NULL);
       op->is_boot = 1;
+      boot_parent = get_boot_device_parent (bootpath, &is_boot_nvmeof);
+      boot_type =  grub_ieee1275_get_device_type (boot_parent);
+      if (boot_type)
+	early_log ("the boot device type: %s\n", boot_type);
+      else
+	early_log ("the boot device type is unknown\n");
     }
   grub_free (type);
   grub_free (bootpath);
@@ -670,18 +1233,57 @@ grub_ofdisk_fini (void)
   grub_disk_dev_unregister (&grub_ofdisk_dev);
 }
 
+static const char *
+grub_env_get_boot_type (struct grub_env_var *var __attribute__ ((unused)),
+			const char *val __attribute__ ((unused)))
+{
+  static char *ret;
+
+  if (!ret)
+    ret = grub_xasprintf("boot: %s type: %s is_nvmeof? %d",
+	      boot_parent,
+	      boot_type ? : "unknown",
+	      is_boot_nvmeof);
+
+  return ret;
+}
+
+static char *
+grub_env_set_boot_type (struct grub_env_var *var __attribute__ ((unused)),
+			const char *val __attribute__ ((unused)))
+{
+  /* READ ONLY */
+  return NULL;
+}
+
+static grub_err_t
+grub_cmd_early_msg (struct grub_command *cmd __attribute__ ((unused)),
+		   int argc __attribute__ ((unused)),
+		   char *argv[] __attribute__ ((unused)))
+{
+  print_early_log ();
+  return 0;
+}
+
+static grub_command_t cmd_early_msg;
+
 void
 grub_ofdisk_init (void)
 {
   grub_disk_firmware_fini = grub_ofdisk_fini;
 
   insert_bootpath ();
+  grub_register_variable_hook ("ofdisk_boot_type", grub_env_get_boot_type,
+                               grub_env_set_boot_type );
 
+  cmd_early_msg =
+    grub_register_command ("ofdisk_early_msg", grub_cmd_early_msg,
+			   0, N_("Show early boot message in ofdisk."));
   grub_disk_dev_register (&grub_ofdisk_dev);
 }
 
 static grub_err_t
-grub_ofdisk_get_block_size (const char *device, grub_uint32_t *block_size,
+grub_ofdisk_get_block_size (grub_uint32_t *block_size,
 			    struct ofdisk_hash_ent *op)
 {
   struct size_args_ieee1275
@@ -693,16 +1295,6 @@ grub_ofdisk_get_block_size (const char *device, grub_uint32_t *block_size,
       grub_ieee1275_cell_t size1;
       grub_ieee1275_cell_t size2;
     } args_ieee1275;
-
-  if (last_ihandle)
-    grub_ieee1275_close (last_ihandle);
-
-  last_ihandle = 0;
-  last_devpath = NULL;
-
-  grub_ieee1275_open (device, &last_ihandle);
-  if (! last_ihandle)
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "can't open device");
 
   *block_size = 0;
 
@@ -734,4 +1326,51 @@ grub_ofdisk_get_block_size (const char *device, grub_uint32_t *block_size,
     }
 
   return 0;
+}
+
+struct ofdisk_early_msg
+{
+  struct ofdisk_early_msg *next;
+  char *msg;
+};
+
+static struct ofdisk_early_msg *early_msg_head;
+static struct ofdisk_early_msg **early_msg_last = &early_msg_head;
+
+static void
+early_log (const char *fmt, ...)
+{
+  struct ofdisk_early_msg *n;
+  va_list args;
+
+  grub_error_push ();
+  n = grub_malloc (sizeof (*n));
+  if (!n)
+    {
+      grub_errno = 0;
+      grub_error_pop ();
+      return;
+    }
+  n->next = 0;
+
+  va_start (args, fmt);
+  n->msg = grub_xvasprintf (fmt, args);
+  va_end (args);
+
+  *early_msg_last = n;
+  early_msg_last = &n->next;
+
+  grub_errno = 0;
+  grub_error_pop ();
+}
+
+static void
+print_early_log (void)
+{
+  struct ofdisk_early_msg *cur;
+
+  if (!early_msg_head)
+    grub_printf ("no early log is available\n");
+  for (cur = early_msg_head; cur; cur = cur->next)
+    grub_printf ("%s\n", cur->msg);
 }

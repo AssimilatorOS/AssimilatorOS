@@ -148,6 +148,11 @@ struct linux_i386_kernel_header
   grub_uint32_t kernel_alignment;
   grub_uint8_t relocatable;
   grub_uint8_t min_alignment;
+#define LINUX_XLF_KERNEL_64                   (1<<0)
+#define LINUX_XLF_CAN_BE_LOADED_ABOVE_4G      (1<<1)
+#define LINUX_XLF_EFI_HANDOVER_32             (1<<2)
+#define LINUX_XLF_EFI_HANDOVER_64             (1<<3)
+#define LINUX_XLF_EFI_KEXEC                   (1<<4)
   grub_uint16_t xloadflags;
   grub_uint32_t cmdline_size;
   grub_uint32_t hardware_subarch;
@@ -241,7 +246,11 @@ struct linux_kernel_params
   grub_uint32_t ofw_cif_handler;	/* b8 */
   grub_uint32_t ofw_idt;		/* bc */
 
-  grub_uint8_t padding7[0x1b8 - 0xc0];
+  grub_uint32_t ext_ramdisk_image;	/* 0xc0 */
+  grub_uint32_t ext_ramdisk_size;	/* 0xc4 */
+  grub_uint32_t ext_cmd_line_ptr;	/* 0xc8 */
+
+  grub_uint8_t padding7[0x1b8 - 0xcc];
 
   union
     {

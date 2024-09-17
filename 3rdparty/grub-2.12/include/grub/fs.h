@@ -128,4 +128,6 @@ grub_fs_unregister (grub_fs_t fs)
 
 grub_fs_t EXPORT_FUNC(grub_fs_probe) (grub_device_t device);
 
+#define ENV_BTRFS_OFFSET (256)
+
 #endif /* ! GRUB_FS_HEADER */

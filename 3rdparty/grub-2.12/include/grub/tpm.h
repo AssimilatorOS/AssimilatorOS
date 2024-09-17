@@ -36,6 +36,12 @@
 
 #define EV_IPL 0x0d
 
+struct grub_tpm_digest {
+	const char *	algorithm;
+	unsigned int	size;
+	unsigned char	value[1];	/* variable length */
+};
+
 grub_err_t grub_tpm_measure (unsigned char *buf, grub_size_t size,
 			     grub_uint8_t pcr, const char *description);
 int grub_tpm_present (void);
@@ -45,5 +51,7 @@ grub_is_tpm_fail_fatal (void)
 {
   return grub_env_get_bool ("tpm_fail_fatal", false);
 }
+struct grub_tpm_digest *grub_tpm_read_pcr (grub_uint8_t index, const char *algo);
+void grub_tpm_digest_free (struct grub_tpm_digest *d);
 
 #endif

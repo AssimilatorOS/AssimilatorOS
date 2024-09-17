@@ -20,9 +20,22 @@
 #ifndef GRUB_ARM_LINUX_HEADER
 #define GRUB_ARM_LINUX_HEADER 1
 
+#include <grub/efi/pe32.h>
 #include "system.h"
 
 #include <grub/efi/pe32.h>
+
+struct grub_arm_linux_pe_header
+{
+  grub_uint32_t magic;
+  struct grub_pe32_coff_header coff;
+  struct grub_pe32_optional_header opt;
+};
+
+#if defined(__arm__)
+# define GRUB_PE32_PEXX_MAGIC GRUB_PE32_PE32_MAGIC
+# define grub_armxx_linux_pe_header grub_arm_linux_pe_header
+#endif
 
 #if defined GRUB_MACHINE_UBOOT
 # include <grub/uboot/uboot.h>

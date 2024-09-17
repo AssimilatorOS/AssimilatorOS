@@ -35,6 +35,7 @@ library = {
   common = grub-core/kern/list.c;
   common = grub-core/kern/misc.c;
   common = grub-core/kern/partition.c;
+  common = grub-core/kern/protectors.c;
   common = grub-core/lib/crypto.c;
   common = grub-core/lib/json/json.c;
   common = grub-core/disk/luks.c;
@@ -204,6 +205,28 @@ program = {
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBLZMA)';
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+};
+
+program = {
+  name = grub-protect;
+
+  common = grub-core/osdep/init.c;
+  common = grub-core/tpm2/args.c;
+  common = grub-core/tpm2/buffer.c;
+  common = grub-core/tpm2/mu.c;
+  common = grub-core/tpm2/tpm2.c;
+  common = grub-core/tpm2/tpm2key_asn1_tab.c;
+  common = util/grub-protect.c;
+  common = util/probe.c;
+
+  ldadd = libgrubmods.a;
+  ldadd = libgrubgcry.a;
+  ldadd = libgrubkern.a;
+  ldadd = grub-core/lib/gnulib/libgnu.a;
+  ldadd = '$(LIBTASN1)';
+  ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+
+  enable = efi;
 };
 
 program = {
@@ -377,6 +400,7 @@ program = {
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
   cppflags = '-DGRUB_SETUP_FUNC=grub_util_bios_setup';
+  emu_condition = COND_NOT_emu;
 };
 
 program = {
@@ -397,6 +421,7 @@ program = {
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
   cppflags = '-DGRUB_SETUP_FUNC=grub_util_sparc_setup';
+  emu_condition = COND_NOT_emu;
 };
 
 program = {
@@ -412,6 +437,7 @@ program = {
   ldadd = libgrubkern.a;
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  emu_condition = COND_NOT_emu;
 };
 
 program = {
@@ -442,6 +468,7 @@ program = {
   ldadd = libgrubkern.a;
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  emu_condition = COND_NOT_emu;
 };
 
 data = {
@@ -453,6 +480,13 @@ script = {
   name = '00_header';
   common = util/grub.d/00_header.in;
   installdir = grubconf;
+};
+
+script = {
+  name = '05_crypttab';
+  common = util/grub.d/05_crypttab.in;
+  installdir = grubconf;
+  condition = COND_HOST_LINUX;
 };
 
 script = {
@@ -512,6 +546,13 @@ script = {
 };
 
 script = {
+  name = '20_ppc_terminfo';
+  common = util/grub.d/20_ppc_terminfo.in;
+  installdir = grubconf;
+  condition = COND_HOST_LINUX;
+};
+
+script = {
   name = '25_bli';
   common = util/grub.d/25_bli.in;
   installdir = grubconf;
@@ -538,6 +579,12 @@ script = {
 script = {
   name = '41_custom';
   common = util/grub.d/41_custom.in;
+  installdir = grubconf;
+};
+
+script = {
+  name = '95_textmode';
+  common = util/grub.d/95_textmode.in;
   installdir = grubconf;
 };
 
@@ -658,8 +705,15 @@ program = {
   common = grub-core/disk/host.c;
 
   common = util/resolve.c;
+  emu_condition = COND_s390x;
   common = grub-core/kern/emu/argp_common.c;
   common = grub-core/osdep/init.c;
+  common = grub-core/osdep/journaled_fs.c;
+  extra_dist = grub-core/osdep/basic/journaled_fs.c;
+  extra_dist = grub-core/osdep/linux/journaled_fs.c;
+  common = grub-core/osdep/efi_removable_fallback.c;
+  extra_dist = grub-core/osdep/basic/efi_removable_fallback.c;
+  extra_dist = grub-core/osdep/linux/efi_removable_fallback.c;
 
   ldadd = '$(LIBLZMA)';
   ldadd = libgrubmods.a;
@@ -724,6 +778,46 @@ script = {
   common = util/grub-reboot.in;
   mansection = 8;
   installdir = sbin;
+};
+
+script = {
+  name = grub-zipl-setup;
+  installdir = sbin;
+  common = util/s390x/zipl2grub.pl.in;
+  enable = emu;
+  emu_condition = COND_s390x;
+};
+
+data = {
+  name = zipl2grub.conf.in;
+  common = util/s390x/zipl2grub.conf.in;
+  installdir = grubconf;
+  enable = emu;
+  emu_condition = COND_s390x;
+};
+
+script = {
+  name = dracut-module-setup.sh;
+  common = util/s390x/dracut-module-setup.sh.in;
+  enable = emu;
+  emu_condition = COND_s390x;
+  installdir = platform;
+};
+
+script = {
+  name = dracut-grub.sh;
+  common = util/s390x/dracut-grub2.sh.in;
+  enable = emu;
+  emu_condition = COND_s390x;
+  installdir = platform;
+};
+
+script = {
+  name = dracut-zipl-refresh;
+  common = util/s390x/dracut-zipl-refresh.sh.in;
+  enable = emu;
+  emu_condition = COND_s390x;
+  installdir = platform;
 };
 
 script = {
@@ -1250,6 +1344,12 @@ script = {
   common = tests/luks2_test.in;
 };
 
+script = {
+  testcase = native;
+  name = test_asn1;
+  common = tests/test_asn1.in;
+};
+
 program = {
   testcase = native;
   name = example_unit_test;
@@ -1374,6 +1474,7 @@ program = {
   ldadd = libgrubkern.a;
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  emu_condition = COND_NOT_emu;
 };
 
 program = {

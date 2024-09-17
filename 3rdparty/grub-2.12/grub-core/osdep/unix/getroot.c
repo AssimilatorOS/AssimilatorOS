@@ -489,6 +489,73 @@ grub_find_device (const char *dir, dev_t dev)
   return 0;
 }
 
+#ifdef __linux__
+int
+grub_can_guess_from_mountinfo (const char *dir_in)
+{
+  char **cur;
+  char **os_dev = NULL;
+  char *dir = grub_canonicalize_file_name (dir_in);
+  int ret = 0;
+
+  if (!dir)
+    return 0;
+
+  os_dev = grub_find_root_devices_from_mountinfo (dir, NULL);
+
+  if (!os_dev)
+    os_dev = find_root_devices_from_libzfs (dir);
+
+  if (!os_dev)
+    {
+      free (dir);
+      return 0;
+    }
+
+  for (cur = os_dev; *cur; cur++)
+    {
+      if (strcmp (*cur, "/dev/root") == 0
+	  || strncmp (*cur, "/dev/dm-", sizeof ("/dev/dm-") - 1) == 0)
+	/* Assume known and good names */
+	continue;
+      else
+	{
+	  struct stat st;
+
+	  char *tmp = grub_canonicalize_file_name (*cur);
+	  if (tmp == NULL)
+	    break;
+
+	  if (strncmp (tmp, "/dev/dm-", sizeof ("/dev/dm-") - 1) == 0)
+	    continue;
+
+	  if (lstat (tmp, &st) < 0)
+	    {
+	      free (tmp);
+	      break;
+	    }
+	  free (tmp);
+	  if (! S_ISBLK (st.st_mode))
+	    /* only block device allowed */
+	    break;
+	}
+    }
+
+  if (*cur == NULL)
+    /* no bogus device left, good */
+    ret = 1;
+  else
+    grub_util_info ("`%s' is not os device", *cur);
+
+  for (cur = os_dev; *cur; cur++)
+    free (*cur);
+  free (os_dev);
+  free (dir);
+
+  return ret;
+}
+#endif /* __linux__ */
+
 char **
 grub_guess_root_devices (const char *dir_in)
 {

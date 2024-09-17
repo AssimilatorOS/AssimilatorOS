@@ -994,7 +994,13 @@ grub_video_vbe_setup (unsigned int width, unsigned int height,
     {
       grub_vbe_get_preferred_mode (&width, &height);
       if (grub_errno == GRUB_ERR_NONE)
-	preferred_mode = 1;
+	{
+	  preferred_mode = 1;
+	  /* Limit the range of preferred resolution not exceeding FHD
+	     to keep the fixed bitmap font readable */
+	  width = (width < 1920) ? width : 1920;
+	  height = (height < 1080) ? height : 1080;
+	}
       else
 	{
 	  /* Fall back to 640x480.  This is conservative, but the largest
@@ -1053,6 +1059,15 @@ grub_video_vbe_setup (unsigned int width, unsigned int height,
 	  if (vbe_mode_info.x_resolution > width
 	      || vbe_mode_info.y_resolution > height)
 	    /* Resolution exceeds that of preferred mode.  */
+	    continue;
+
+	  /* Blacklist 1440x900x32 from preferred mode handling until a
+	     better solution is available.  This mode causes problems on
+	     many Thinkpads.
+	   */
+	  if (vbe_mode_info.x_resolution == 1440 &&
+	      vbe_mode_info.y_resolution == 900 &&
+	      vbe_mode_info.bits_per_pixel == 32)
 	    continue;
 	}
       else

@@ -153,6 +153,50 @@ do_print (const char *x, void *data)
   grub_printf ("%s%c", x, delim);
 }
 
+static int
+check_duplicate_partmap (const char *name)
+{
+  static int alloc, used;
+  static char **partmaps;
+  int i;
+
+  if (!name)
+    {
+      if (partmaps)
+      {
+        for (i= 0; i < used; ++i)
+          free (partmaps[i]);
+        free (partmaps);
+        partmaps = NULL;
+        alloc = 0;
+        used = 0;
+      }
+      return 1;
+    }
+
+  for (i= 0; i < used; ++i)
+    if (strcmp (partmaps[i], name) == 0)
+      return 1;
+
+  if (alloc <= used)
+    {
+      alloc = (alloc) ? (alloc << 1) : 4;
+      partmaps = xrealloc (partmaps, alloc * sizeof (*partmaps));
+    }
+
+  partmaps[used++] = strdup (name);
+  return 0;
+}
+
+static void
+do_print_partmap (const char *x, void *data)
+{
+  char delim = *(const char *) data;
+  if (check_duplicate_partmap (x) != 0)
+    return;
+  grub_printf ("%s%c", x, delim);
+}
+
 static void
 probe_partmap (grub_disk_t disk, char delim)
 {
@@ -165,10 +209,14 @@ probe_partmap (grub_disk_t disk, char delim)
     }
 
   for (part = disk->partition; part; part = part->parent)
-    printf ("%s%c", part->partmap->name, delim);
+    {
+      if (check_duplicate_partmap (part->partmap->name) != 0)
+	continue;
+      printf ("%s%c", part->partmap->name, delim);
+    }
 
   if (disk->dev->id == GRUB_DISK_DEVICE_DISKFILTER_ID)
-    grub_diskfilter_get_partmap (disk, do_print, &delim);
+    grub_diskfilter_get_partmap (disk, do_print_partmap, &delim);
 
   /* In case of LVM/RAID, check the member devices as well.  */
   if (disk->dev->disk_memberlist)
@@ -242,8 +290,26 @@ probe_cryptodisk_uuid (grub_disk_t disk, char delim)
     }
   if (disk->dev->id == GRUB_DISK_DEVICE_CRYPTODISK_ID)
     {
+      grub_size_t i, j;
       const char *uu = grub_util_cryptodisk_get_uuid (disk);
-      grub_printf ("%s%c", uu, delim);
+      grub_size_t len = grub_strlen (uu);
+      char *p = grub_malloc (len + 1);
+
+      /* Removing dash in the UUID string
+       * This keeps old grub binary to work with newer config in a system,
+       * especially for snapshots. It is a temporary change to make sure smooth
+       * transition from 2.06 to 2.12-rc1 and this hunk can be removed
+       * after 2.12-rc1 release stablized.
+       */
+      for (i = 0, j = 0; i < len; i++)
+        {
+          if (uu[i] != '-')
+            p[j++] = uu[i];
+        }
+      p[j] = '\0';
+
+      grub_printf ("%s%c", p, delim);
+      grub_free (p);
     }
 }
 
@@ -674,8 +740,11 @@ probe (const char *path, char **device_names, char delim)
 	probe_cryptodisk_uuid (dev->disk, delim);
 
       else if (print == PRINT_PARTMAP)
-	/* Check if dev->disk itself is contained in a partmap.  */
-	probe_partmap (dev->disk, delim);
+	{
+	  /* Check if dev->disk itself is contained in a partmap.  */
+	  probe_partmap (dev->disk, delim);
+	  check_duplicate_partmap (NULL);
+	}
 
       else if (print == PRINT_PARTUUID)
 	{

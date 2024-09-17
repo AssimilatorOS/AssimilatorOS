@@ -33,6 +33,12 @@ struct grub_ieee1275_mem_region
   unsigned int size;
 };
 
+#define IEEE1275_MAX_MAP_RESOURCE 10
+struct grub_map_track {
+  grub_addr_t addr;
+  grub_size_t size;
+};
+
 #define IEEE1275_MAX_PROP_LEN	8192
 #define IEEE1275_MAX_PATH_LEN	256
 
@@ -145,6 +151,8 @@ enum grub_ieee1275_flag
   GRUB_IEEE1275_FLAG_POWER_VM,
 
   GRUB_IEEE1275_FLAG_POWER_KVM,
+
+  GRUB_IEEE1275_FLAG_DISABLE_VIDEO_SUPPORT
 };
 
 extern int EXPORT_FUNC(grub_ieee1275_test_flag) (enum grub_ieee1275_flag flag);
@@ -230,6 +238,7 @@ char *EXPORT_FUNC(grub_ieee1275_encode_uint4) (grub_ieee1275_ihandle_t ihandle,
 int EXPORT_FUNC(grub_ieee1275_get_block_size) (grub_ieee1275_ihandle_t ihandle);
 
 grub_err_t EXPORT_FUNC(grub_claimmap) (grub_addr_t addr, grub_size_t size);
+void EXPORT_FUNC(grub_releasemap) (void);
 
 int
 EXPORT_FUNC(grub_ieee1275_map) (grub_addr_t phys, grub_addr_t virt,
@@ -251,6 +260,8 @@ int EXPORT_FUNC(grub_ieee1275_devalias_next) (struct grub_ieee1275_devalias *ali
 void EXPORT_FUNC(grub_ieee1275_children_peer) (struct grub_ieee1275_devalias *alias);
 void EXPORT_FUNC(grub_ieee1275_children_first) (const char *devpath,
 						struct grub_ieee1275_devalias *alias);
+int EXPORT_FUNC(grub_ieee1275_cas_reboot) (char **script);
+int EXPORT_FUNC(grub_ieee1275_set_boot_last_label) (const char *text);
 
 char *EXPORT_FUNC(grub_ieee1275_get_boot_dev) (void);
 

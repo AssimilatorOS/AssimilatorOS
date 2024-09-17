@@ -103,6 +103,14 @@ struct btrfs_ioctl_search_key
   grub_uint32_t unused[9];
 };
 
+struct btrfs_ioctl_search_header {
+  grub_uint64_t transid;
+  grub_uint64_t objectid;
+  grub_uint64_t offset;
+  grub_uint32_t type;
+  grub_uint32_t len;
+};
+
 struct btrfs_ioctl_search_args {
   struct btrfs_ioctl_search_key key;
   grub_uint64_t buf[(4096 - sizeof(struct btrfs_ioctl_search_key))
@@ -119,7 +127,7 @@ struct btrfs_ioctl_search_args {
                                struct btrfs_ioctl_fs_info_args)
 
 static int
-grub_util_is_imsm (const char *os_dev);
+grub_util_is_imsm_or_ddf (const char *os_dev);
 
 
 #define ESCAPED_PATH_MAX (4 * PATH_MAX)
@@ -373,6 +381,118 @@ get_btrfs_fs_prefix (const char *mount_path)
   return NULL;
 }
 
+int use_relative_path_on_btrfs = 0;
+
+static char *
+get_btrfs_subvol (const char *path, grub_uint64_t *subvolid)
+{
+  struct btrfs_ioctl_ino_lookup_args args;
+  grub_uint64_t tree_id;
+  grub_uint64_t ret_id;
+  int fd = -1;
+  char *ret = NULL;
+
+  if (subvolid)
+    *subvolid = 0;
+
+  fd = open (path, O_RDONLY);
+
+  if (fd < 0)
+    return NULL;
+
+  memset (&args, 0, sizeof(args));
+  args.objectid = GRUB_BTRFS_TREE_ROOT_OBJECTID;
+
+  if (ioctl (fd, BTRFS_IOC_INO_LOOKUP, &args) < 0)
+    goto error;
+
+  tree_id = args.treeid;
+  ret_id = args.treeid;
+
+  while (tree_id != GRUB_BTRFS_ROOT_VOL_OBJECTID)
+    {
+      struct btrfs_ioctl_search_args sargs;
+      struct grub_btrfs_root_backref *br;
+      struct btrfs_ioctl_search_header *search_header;
+      char *old;
+      grub_uint16_t len;
+      grub_uint64_t inode_id;
+
+      memset (&sargs, 0, sizeof(sargs));
+
+      sargs.key.tree_id = 1;
+      sargs.key.min_objectid = tree_id;
+      sargs.key.max_objectid = tree_id;
+
+      sargs.key.min_offset = 0;
+      sargs.key.max_offset = ~0ULL;
+      sargs.key.min_transid = 0;
+      sargs.key.max_transid = ~0ULL;
+      sargs.key.min_type = GRUB_BTRFS_ITEM_TYPE_ROOT_BACKREF;
+      sargs.key.max_type = GRUB_BTRFS_ITEM_TYPE_ROOT_BACKREF;
+
+      sargs.key.nr_items = 1;
+
+      if (ioctl (fd, BTRFS_IOC_TREE_SEARCH, &sargs) < 0)
+	goto error;
+
+      if (sargs.key.nr_items == 0)
+	goto error;
+
+      search_header = (struct btrfs_ioctl_search_header *)sargs.buf;
+      br = (struct grub_btrfs_root_backref *) (search_header + 1);
+
+      len = grub_le_to_cpu16 (br->n);
+      inode_id = grub_le_to_cpu64 (br->inode_id);
+      tree_id = search_header->offset;
+
+      old = ret;
+      ret = malloc (len + 1);
+      memcpy (ret, br->name, len);
+      ret[len] = '\0';
+
+      if (inode_id != GRUB_BTRFS_TREE_ROOT_OBJECTID)
+	{
+	  char *s;
+
+	  memset(&args, 0, sizeof(args));
+	  args.treeid = search_header->offset;
+	  args.objectid = inode_id;
+
+	  if (ioctl (fd, BTRFS_IOC_INO_LOOKUP, &args) < 0)
+	    goto error;
+
+	  s = xasprintf ("%s%s", args.name, ret);
+	  free (ret);
+	  ret = s;
+	}
+
+      if (old)
+	{
+	  char *s = xasprintf ("%s/%s", ret, old);
+	  free (ret);
+	  free (old);
+	  ret = s;
+	}
+    }
+
+  if (subvolid)
+    *subvolid = ret_id;
+
+  close (fd);
+  return ret;
+
+error:
+
+  if (fd >= 0)
+    close (fd);
+  if (ret)
+    free (ret);
+
+  return NULL;
+}
+
+static char *grub_btrfs_mount_path;
 
 char **
 grub_find_root_devices_from_mountinfo (const char *dir, char **relroot)
@@ -515,7 +635,18 @@ again:
       else if (grub_strcmp (entries[i].fstype, "btrfs") == 0)
 	{
 	  ret = grub_find_root_devices_from_btrfs (dir);
-	  fs_prefix = get_btrfs_fs_prefix (entries[i].enc_path);
+	  if (use_relative_path_on_btrfs)
+	    {
+	      fs_prefix = xstrdup ("/");
+
+	      if (grub_btrfs_mount_path)
+		grub_free (grub_btrfs_mount_path);
+	      grub_btrfs_mount_path = grub_strdup (entries[i].enc_path);
+	    }
+	  else
+	    {
+	      fs_prefix = get_btrfs_fs_prefix (entries[i].enc_path);
+	    }
 	}
       else if (!retry && grub_strcmp (entries[i].fstype, "autofs") == 0)
 	{
@@ -635,10 +766,10 @@ out:
 }
 
 static int
-grub_util_is_imsm (const char *os_dev)
+grub_util_is_imsm_or_ddf (const char *os_dev)
 {
   int retry;
-  int is_imsm = 0;
+  int is_imsm_or_ddf = 0;
   int container_seen = 0;
   const char *dev = os_dev;
 
@@ -699,8 +830,15 @@ grub_util_is_imsm (const char *os_dev)
 	  if (strncmp (buf, "MD_METADATA=imsm",
 		       sizeof ("MD_METADATA=imsm") - 1) == 0)
 	    {
-	      is_imsm = 1;
+	      is_imsm_or_ddf = 1;
 	      grub_util_info ("%s is imsm", dev);
+	      break;
+	    }
+	  if (strncmp (buf, "MD_METADATA=ddf",
+		       sizeof ("MD_METADATA=ddf") - 1) == 0)
+	    {
+	      is_imsm_or_ddf = 1;
+	      grub_util_info ("%s is ddf", dev);
 	      break;
 	    }
 	}
@@ -713,7 +851,7 @@ grub_util_is_imsm (const char *os_dev)
 
   if (dev != os_dev)
     free ((void *) dev);
-  return is_imsm;
+  return is_imsm_or_ddf;
 }
 
 char *
@@ -732,6 +870,10 @@ grub_util_part_to_disk (const char *os_dev, struct stat *st,
 
   if (! realpath (os_dev, path))
     return NULL;
+
+#ifdef __s390x__
+  return path;
+#endif
 
   if (strncmp ("/dev/", path, 5) == 0)
     {
@@ -960,6 +1102,50 @@ grub_util_part_to_disk (const char *os_dev, struct stat *st,
 	  *pp = '\0';
 	  return path;
 	}
+
+      /* If this is a NVDIMM device in fsdax mode */
+      if (strncmp ("pmem", p, 4) == 0 && p[4] >= '0' && p[4] <= '9')
+	{
+	  /* /dev/pmem[0-9]+(\.[0-9]+)?((p[0-9]+)?|s[0-9]*) */
+	  char *pp = strchr (p + 4, 'p');
+	  if (pp)
+	    {
+	      *is_part = 1;
+	      *pp = '\0';
+	    }
+	  else
+	    {
+	      pp = strchr (p + 4, 's');
+	      if (pp && pp[1] >= '0' && pp[1] <= '9')
+		{
+		  *is_part = 1;
+		  pp[1] = '\0';
+		}
+	    }
+	  return path;
+	}
+
+      /* If this is a NVDIMM device in block mode */
+      if (strncmp ("ndblk", p, 5) == 0 && p[5] >= '0' && p[5] <= '9')
+	{
+	  /* /dev/ndblk[0-9]+\.[0-9]+((p[0-9]+)?|s[0-9]*) */
+	  char *pp = strchr (p + 5, 'p');
+	  if (pp)
+	    {
+	      *is_part = 1;
+	      *pp = '\0';
+	    }
+	  else
+	    {
+	      pp = strchr (p + 5, 's');
+	      if (pp && pp[1] >= '0' && pp[1] <= '9')
+		{
+		  *is_part = 1;
+		  pp[1] = '\0';
+		}
+	    }
+	  return path;
+	}
     }
 
   return path;
@@ -1078,7 +1264,7 @@ grub_util_get_dev_abstraction_os (const char *os_dev)
 
   /* Check for RAID.  */
   if (!strncmp (os_dev, "/dev/md", 7) && ! grub_util_device_is_mapped (os_dev)
-      && !grub_util_is_imsm (os_dev))
+      && !grub_util_is_imsm_or_ddf (os_dev))
     return GRUB_DEV_ABSTRACTION_RAID;
   return GRUB_DEV_ABSTRACTION_NONE;
 }
@@ -1138,6 +1324,24 @@ grub_util_get_grub_dev_os (const char *os_dev)
     }
 
   return grub_dev;
+}
+
+
+char *
+grub_util_get_btrfs_subvol (const char *path, char **mount_path, grub_uint64_t *subvolid)
+{
+  if (mount_path)
+    *mount_path = NULL;
+
+  grub_free (grub_find_root_devices_from_mountinfo (path, NULL));
+
+  if (!grub_btrfs_mount_path)
+    return NULL;
+
+  if (mount_path)
+    *mount_path = grub_strdup (grub_btrfs_mount_path);
+
+  return get_btrfs_subvol (grub_btrfs_mount_path, subvolid);
 }
 
 char *

@@ -80,6 +80,8 @@ enum grub_file_type
     GRUB_FILE_TYPE_PUBLIC_KEY,
     /* File holding public key to add to trused keys.  */
     GRUB_FILE_TYPE_PUBLIC_KEY_TRUST,
+    /* File holding x509 certificiate to add to trusted keys.  */
+    GRUB_FILE_TYPE_CERTIFICATE_TRUST,
     /* File of which we intend to print a blocklist to the user.  */
     GRUB_FILE_TYPE_PRINT_BLOCKLIST,
     /* File we intend to use for test loading or testing speed.  */
@@ -126,6 +128,7 @@ enum grub_file_type
     GRUB_FILE_TYPE_FS_SEARCH,
     GRUB_FILE_TYPE_AUDIO,
     GRUB_FILE_TYPE_VBE_DUMP,
+    GRUB_FILE_TYPE_READ_ENVVAR,
 
     GRUB_FILE_TYPE_LOADENV,
     GRUB_FILE_TYPE_SAVEENV,
@@ -182,6 +185,8 @@ extern grub_disk_read_hook_t EXPORT_VAR(grub_file_progress_hook);
 /* Filters with lower ID are executed first.  */
 typedef enum grub_file_filter_id
   {
+    GRUB_FILE_FILTER_DISTRUST,
+    GRUB_FILE_FILTER_NOCAT,
     GRUB_FILE_FILTER_VERIFY,
     GRUB_FILE_FILTER_GZIO,
     GRUB_FILE_FILTER_XZIO,

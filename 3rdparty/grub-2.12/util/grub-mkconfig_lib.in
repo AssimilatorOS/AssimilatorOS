@@ -49,7 +49,12 @@ grub_warn ()
 
 make_system_path_relative_to_its_root ()
 {
+  if [ "x${SUSE_BTRFS_SNAPSHOT_BOOTING}" = "xtrue" ] &&
+     [ "x${GRUB_FS}" = "xbtrfs" ] ; then
+  "${grub_mkrelpath}" -r "$1"
+  else
   "${grub_mkrelpath}" "$1"
+  fi
 }
 
 is_path_readable_by_grub ()
@@ -193,6 +198,12 @@ grub_file_is_not_garbage ()
       *.rpmsave|*.rpmnew) return 1 ;;
       README*|*/README*)  return 1 ;; # documentation
       *.sig) return 1 ;; # signatures
+      # Skip zfcpdump kernel from the grub boot menu (bsc#1166513) The zfcpdump
+      # kernel image is used by zipl to prepare a SCSI dump disc and is only
+      # intended to boot from that disk for creating kernel crash dumps,
+      # therefore booting it from grub is not making sense and also will result
+      # in unbootable system.
+      *-zfcpdump) return 1 ;; # s390 zfcpdump image
     esac
   else
     return 1
@@ -203,12 +214,17 @@ grub_file_is_not_garbage ()
 version_sort ()
 {
   case $version_sort_sort_has_v in
+    rpmsort)
+      LC_ALL=C /usr/lib/rpm/rpmsort "$@";;
     yes)
       LC_ALL=C sort -V "$@";;
     no)
       LC_ALL=C sort -n "$@";;
     *)
-      if sort -V </dev/null > /dev/null 2>&1; then
+      if test -x /usr/lib/rpm/rpmsort; then
+        version_sort_sort_has_v=rpmsort
+        LC_ALL=C /usr/lib/rpm/rpmsort "$@"
+      elif sort -V </dev/null > /dev/null 2>&1; then
         version_sort_sort_has_v=yes
 	LC_ALL=C sort -V "$@"
       else

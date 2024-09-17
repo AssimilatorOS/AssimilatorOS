@@ -35,6 +35,9 @@ enum grub_dev_abstraction_types {
 
 char *grub_find_device (const char *dir, dev_t dev);
 void grub_util_pull_device (const char *osname);
+#ifdef __linux__
+int grub_can_guess_from_mountinfo (const char *dir);
+#endif
 char **grub_guess_root_devices (const char *dir);
 int grub_util_get_dev_abstraction (const char *os_dev);
 char *grub_make_system_path_relative_to_its_root (const char *path);
@@ -51,6 +54,11 @@ void grub_util_follow_gpart_up (const char *name, grub_disk_addr_t *off_out,
 #ifdef __linux__
 char **
 grub_find_root_devices_from_mountinfo (const char *dir, char **relroot);
+#endif
+
+#ifdef __linux__
+char *
+grub_util_get_btrfs_subvol (const char *path, char **mount_path, grub_uint64_t *subvolid);
 #endif
 
 /* Devmapper functions provided by getroot_devmapper.c.  */
