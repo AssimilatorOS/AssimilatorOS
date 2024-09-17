@@ -14,7 +14,7 @@ libgrubgcry_a_CFLAGS  =
 libgrubgcry_a_CPPFLAGS  = 
 libgrubgcry_a_CCASFLAGS  = 
 noinst_LIBRARIES += libgrubkern.a
-libgrubkern_a_SOURCES += grub-core/commands/extcmd.c grub-core/disk/AFSplitter.c grub-core/disk/cryptodisk.c grub-core/disk/diskfilter.c grub-core/disk/geli.c grub-core/disk/ldm.c grub-core/disk/luks.c grub-core/disk/luks2.c grub-core/fs/archelp.c grub-core/fs/proc.c grub-core/kern/command.c grub-core/kern/device.c grub-core/kern/disk.c grub-core/kern/emu/hostdisk.c grub-core/kern/emu/misc.c grub-core/kern/emu/mm.c grub-core/kern/env.c grub-core/kern/err.c grub-core/kern/file.c grub-core/kern/fs.c grub-core/kern/list.c grub-core/kern/misc.c grub-core/kern/partition.c grub-core/lib/arg.c grub-core/lib/crypto.c grub-core/lib/disk.c grub-core/lib/json/json.c grub-core/lib/pbkdf2.c grub-core/osdep/devmapper/getroot.c grub-core/osdep/devmapper/hostdisk.c grub-core/osdep/exec.c grub-core/osdep/getroot.c grub-core/osdep/hostdisk.c grub-core/osdep/password.c grub-core/osdep/relpath.c grub-core/osdep/sleep.c grub-core/osdep/unix/getroot.c grub-core/osdep/unix/hostdisk.c grub-core/partmap/gpt.c grub-core/partmap/msdos.c util/getroot.c util/misc.c 
+libgrubkern_a_SOURCES += grub-core/commands/extcmd.c grub-core/disk/AFSplitter.c grub-core/disk/cryptodisk.c grub-core/disk/diskfilter.c grub-core/disk/geli.c grub-core/disk/ldm.c grub-core/disk/luks.c grub-core/disk/luks2.c grub-core/fs/archelp.c grub-core/fs/proc.c grub-core/kern/command.c grub-core/kern/device.c grub-core/kern/disk.c grub-core/kern/emu/hostdisk.c grub-core/kern/emu/misc.c grub-core/kern/emu/mm.c grub-core/kern/env.c grub-core/kern/err.c grub-core/kern/file.c grub-core/kern/fs.c grub-core/kern/list.c grub-core/kern/misc.c grub-core/kern/partition.c grub-core/kern/protectors.c grub-core/lib/arg.c grub-core/lib/crypto.c grub-core/lib/disk.c grub-core/lib/json/json.c grub-core/lib/pbkdf2.c grub-core/osdep/devmapper/getroot.c grub-core/osdep/devmapper/hostdisk.c grub-core/osdep/exec.c grub-core/osdep/getroot.c grub-core/osdep/hostdisk.c grub-core/osdep/password.c grub-core/osdep/relpath.c grub-core/osdep/sleep.c grub-core/osdep/unix/getroot.c grub-core/osdep/unix/hostdisk.c grub-core/partmap/gpt.c grub-core/partmap/msdos.c util/getroot.c util/misc.c 
 nodist_libgrubkern_a_SOURCES += 
 libgrubkern_a_CFLAGS += $(AM_CFLAGS) $(CFLAGS_LIBRARY) $(CFLAGS_GNULIB) 
 libgrubkern_a_CPPFLAGS += $(AM_CPPFLAGS) $(CPPFLAGS_LIBRARY) $(CPPFLAGS_GNULIB) -I$(srcdir)/grub-core/lib/json 
@@ -60,6 +60,118 @@ grub_mkimage_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += grub-core/osdep/aros/config.c grub-core/osdep/windows/config.c grub-core/osdep/unix/config.c util/grub-mkimagexx.c 
 BUILT_SOURCES += $(nodist_grub_mkimage_SOURCES)
 CLEANFILES += $(nodist_grub_mkimage_SOURCES)
+
+if COND_i386_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_x86_64_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_ia64_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_arm_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_arm64_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_loongarch64_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_riscv32_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
+
+if COND_riscv64_efi
+bin_PROGRAMS += grub-protect
+grub_protect_SOURCES  = grub-core/osdep/init.c grub-core/tpm2/args.c grub-core/tpm2/buffer.c grub-core/tpm2/mu.c grub-core/tpm2/tpm2.c grub-core/tpm2/tpm2key_asn1_tab.c util/grub-protect.c util/probe.c 
+nodist_grub_protect_SOURCES  = 
+grub_protect_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBTASN1) $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_protect_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_protect_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_protect_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_protect_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_protect_SOURCES)
+CLEANFILES += $(nodist_grub_protect_SOURCES)
+endif
 bin_PROGRAMS += grub-mkrelpath
 if COND_MAN_PAGES
 man_MANS += grub-mkrelpath.1
@@ -246,6 +358,9 @@ grub_probe_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_probe_SOURCES)
 CLEANFILES += $(nodist_grub_probe_SOURCES)
+
+if COND_emu
+if COND_NOT_emu
 sbin_PROGRAMS += grub-bios-setup
 if COND_MAN_PAGES
 man_MANS += grub-bios-setup.8
@@ -266,6 +381,540 @@ grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
 BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
 CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif COND_NOT_emu
+endif
+
+if COND_i386_pc
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_qemu
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_coreboot
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_multiboot
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_ieee1275
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_x86_64_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_xen
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_x86_64_xen
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_mips_loongson
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_mips_arc
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_ia64_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_arm_uboot
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_arm_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_arm64_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_arm_coreboot
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_loongarch64_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_riscv32_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_riscv64_efi
+sbin_PROGRAMS += grub-bios-setup
+if COND_MAN_PAGES
+man_MANS += grub-bios-setup.8
+
+grub-bios-setup.8: grub-bios-setup 
+	chmod a+x grub-bios-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-bios-setup.h2m -o $@ grub-bios-setup
+	
+CLEANFILES += grub-bios-setup.8
+endif
+grub_bios_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c util/grub-setup.c util/setup_bios.c 
+nodist_grub_bios_setup_SOURCES  = 
+grub_bios_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_bios_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_bios_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_bios_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_bios_setup 
+grub_bios_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += util/setup.c grub-core/osdep/generic/blocklist.c grub-core/osdep/linux/blocklist.c grub-core/osdep/windows/blocklist.c 
+BUILT_SOURCES += $(nodist_grub_bios_setup_SOURCES)
+CLEANFILES += $(nodist_grub_bios_setup_SOURCES)
+endif
+
+if COND_emu
+if COND_NOT_emu
 sbin_PROGRAMS += grub-sparc64-setup
 if COND_MAN_PAGES
 man_MANS += grub-sparc64-setup.8
@@ -286,6 +935,540 @@ grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
 CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif COND_NOT_emu
+endif
+
+if COND_i386_pc
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_qemu
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_coreboot
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_multiboot
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_ieee1275
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_x86_64_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_xen
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_x86_64_xen
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_mips_loongson
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_mips_arc
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_ia64_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_arm_uboot
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_arm_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_arm64_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_arm_coreboot
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_loongarch64_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_riscv32_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_riscv64_efi
+sbin_PROGRAMS += grub-sparc64-setup
+if COND_MAN_PAGES
+man_MANS += grub-sparc64-setup.8
+
+grub-sparc64-setup.8: grub-sparc64-setup 
+	chmod a+x grub-sparc64-setup
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-sparc64-setup.h2m -o $@ grub-sparc64-setup
+	
+CLEANFILES += grub-sparc64-setup.8
+endif
+grub_sparc64_setup_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/init.c grub-core/osdep/ofpath.c util/grub-setup.c util/setup_sparc.c 
+nodist_grub_sparc64_setup_SOURCES  = 
+grub_sparc64_setup_LDADD  = libgrubmods.a libgrubkern.a libgrubgcry.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_sparc64_setup_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_sparc64_setup_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_sparc64_setup_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) -DGRUB_SETUP_FUNC=grub_util_sparc_setup 
+grub_sparc64_setup_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_sparc64_setup_SOURCES)
+CLEANFILES += $(nodist_grub_sparc64_setup_SOURCES)
+endif
+
+if COND_emu
+if COND_NOT_emu
 sbin_PROGRAMS += grub-ofpathname
 if COND_MAN_PAGES
 man_MANS += grub-ofpathname.8
@@ -306,6 +1489,537 @@ grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
 CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif COND_NOT_emu
+endif
+
+if COND_i386_pc
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_qemu
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_coreboot
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_multiboot
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_ieee1275
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_x86_64_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_xen
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_x86_64_xen
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_mips_loongson
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_mips_arc
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_ia64_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_arm_uboot
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_arm_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_arm64_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_arm_coreboot
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_loongarch64_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_riscv32_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
+
+if COND_riscv64_efi
+sbin_PROGRAMS += grub-ofpathname
+if COND_MAN_PAGES
+man_MANS += grub-ofpathname.8
+
+grub-ofpathname.8: grub-ofpathname 
+	chmod a+x grub-ofpathname
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-ofpathname.h2m -o $@ grub-ofpathname
+	
+CLEANFILES += grub-ofpathname.8
+endif
+grub_ofpathname_SOURCES  = grub-core/osdep/init.c grub-core/osdep/ofpath.c util/ieee1275/grub-ofpathname.c 
+nodist_grub_ofpathname_SOURCES  = 
+grub_ofpathname_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_ofpathname_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_ofpathname_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_ofpathname_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_ofpathname_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_ofpathname_SOURCES)
+CLEANFILES += $(nodist_grub_ofpathname_SOURCES)
+endif
 bin_PROGRAMS += grub-mklayout
 if COND_MAN_PAGES
 man_MANS += grub-mklayout.1
@@ -326,6 +2040,9 @@ grub_mklayout_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_mklayout_SOURCES)
 CLEANFILES += $(nodist_grub_mklayout_SOURCES)
+
+if COND_emu
+if COND_NOT_emu
 sbin_PROGRAMS += grub-macbless
 if COND_MAN_PAGES
 man_MANS += grub-macbless.8
@@ -346,6 +2063,537 @@ grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
 CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif COND_NOT_emu
+endif
+
+if COND_i386_pc
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_qemu
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_coreboot
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_multiboot
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_ieee1275
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_x86_64_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_xen
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_x86_64_xen
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_mips_loongson
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_mips_arc
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_ia64_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_arm_uboot
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_arm_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_arm64_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_arm_coreboot
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_loongarch64_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_riscv32_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
+
+if COND_riscv64_efi
+sbin_PROGRAMS += grub-macbless
+if COND_MAN_PAGES
+man_MANS += grub-macbless.8
+
+grub-macbless.8: grub-macbless 
+	chmod a+x grub-macbless
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-macbless.h2m -o $@ grub-macbless
+	
+CLEANFILES += grub-macbless.8
+endif
+grub_macbless_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/grub-macbless.c 
+nodist_grub_macbless_SOURCES  = 
+grub_macbless_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_macbless_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_macbless_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_macbless_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_macbless_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_macbless_SOURCES)
+CLEANFILES += $(nodist_grub_macbless_SOURCES)
+endif
 if COND_HAVE_EXEC
 bin_PROGRAMS += grub-mkrescue
 if COND_MAN_PAGES
@@ -388,6 +2636,9 @@ grub_mkstandalone_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += grub-core/osdep/linux/platform.c grub-core/osdep/windows/platform.c grub-core/osdep/basic/platform.c grub-core/osdep/basic/no_platform.c grub-core/osdep/unix/platform.c 
 BUILT_SOURCES += $(nodist_grub_mkstandalone_SOURCES)
 CLEANFILES += $(nodist_grub_mkstandalone_SOURCES)
+
+if COND_emu
+if COND_s390x
 sbin_PROGRAMS += grub-install
 if COND_MAN_PAGES
 man_MANS += grub-install.8
@@ -398,16 +2649,547 @@ grub-install.8: grub-install
 	
 CLEANFILES += grub-install.8
 endif
-grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/init.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
 nodist_grub_install_SOURCES  = 
 grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
 grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
 grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
 grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
 grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
-dist_noinst_DATA += 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
 BUILT_SOURCES += $(nodist_grub_install_SOURCES)
 CLEANFILES += $(nodist_grub_install_SOURCES)
+endif COND_s390x
+endif
+
+if COND_i386_pc
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_qemu
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_coreboot
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_multiboot
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_ieee1275
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_x86_64_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_xen
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_x86_64_xen
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_mips_loongson
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_mips_arc
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_ia64_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_arm_uboot
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_arm_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_arm64_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_arm_coreboot
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_loongarch64_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_riscv32_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
+
+if COND_riscv64_efi
+sbin_PROGRAMS += grub-install
+if COND_MAN_PAGES
+man_MANS += grub-install.8
+
+grub-install.8: grub-install 
+	chmod a+x grub-install
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=8 -i $(top_srcdir)/docs/man/grub-install.h2m -o $@ grub-install
+	
+CLEANFILES += grub-install.8
+endif
+grub_install_SOURCES  = grub-core/disk/host.c grub-core/kern/emu/argp_common.c grub-core/kern/emu/hostfs.c grub-core/lib/reed_solomon.c grub-core/osdep/blocklist.c grub-core/osdep/compress.c grub-core/osdep/config.c grub-core/osdep/efi_removable_fallback.c grub-core/osdep/init.c grub-core/osdep/journaled_fs.c grub-core/osdep/ofpath.c grub-core/osdep/platform.c grub-core/osdep/platform_unix.c grub-core/osdep/random.c util/config.c util/editenv.c util/grub-install-common.c util/grub-install.c util/grub-mkimage32.c util/grub-mkimage64.c util/mkimage.c util/probe.c util/render-label.c util/resolve.c util/setup_bios.c util/setup_sparc.c 
+nodist_grub_install_SOURCES  = 
+grub_install_LDADD  = $(LIBLZMA) libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBUTIL) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_install_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_install_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_install_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_install_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += grub-core/osdep/basic/journaled_fs.c grub-core/osdep/linux/journaled_fs.c grub-core/osdep/basic/efi_removable_fallback.c grub-core/osdep/linux/efi_removable_fallback.c 
+BUILT_SOURCES += $(nodist_grub_install_SOURCES)
+CLEANFILES += $(nodist_grub_install_SOURCES)
+endif
 bin_PROGRAMS += grub-mknetdir
 if COND_MAN_PAGES
 man_MANS += grub-mknetdir.1
@@ -525,6 +3307,9 @@ grub_syslinux2cfg_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_syslinux2cfg_SOURCES)
 CLEANFILES += $(nodist_grub_syslinux2cfg_SOURCES)
+
+if COND_emu
+if COND_NOT_emu
 bin_PROGRAMS += grub-glue-efi
 if COND_MAN_PAGES
 man_MANS += grub-glue-efi.1
@@ -545,6 +3330,537 @@ grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM)
 dist_noinst_DATA += 
 BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
 CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif COND_NOT_emu
+endif
+
+if COND_i386_pc
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_qemu
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_coreboot
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_multiboot
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_ieee1275
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_x86_64_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_xen
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_x86_64_xen
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_i386_xen_pvh
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_mips_loongson
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_sparc64_ieee1275
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_powerpc_ieee1275
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_mips_arc
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_ia64_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_mips_qemu_mips
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_arm_uboot
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_arm_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_arm64_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_arm_coreboot
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_loongarch64_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_riscv32_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
+
+if COND_riscv64_efi
+bin_PROGRAMS += grub-glue-efi
+if COND_MAN_PAGES
+man_MANS += grub-glue-efi.1
+
+grub-glue-efi.1: grub-glue-efi 
+	chmod a+x grub-glue-efi
+	PATH=$(builddir):$$PATH pkgdatadir=$(builddir) $(HELP2MAN) --section=1 -i $(top_srcdir)/docs/man/grub-glue-efi.h2m -o $@ grub-glue-efi
+	
+CLEANFILES += grub-glue-efi.1
+endif
+grub_glue_efi_SOURCES  = grub-core/kern/emu/argp_common.c grub-core/osdep/init.c util/glue-efi.c util/grub-glue-efi.c 
+nodist_grub_glue_efi_SOURCES  = 
+grub_glue_efi_LDADD  = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) 
+grub_glue_efi_CFLAGS  = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
+grub_glue_efi_LDFLAGS  = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
+grub_glue_efi_CPPFLAGS  = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+grub_glue_efi_CCASFLAGS  = $(AM_CCASFLAGS) $(CCASFLAGS_PROGRAM) 
+dist_noinst_DATA += 
+BUILT_SOURCES += $(nodist_grub_glue_efi_SOURCES)
+CLEANFILES += $(nodist_grub_glue_efi_SOURCES)
+endif
 bin_PROGRAMS += grub-render-label
 if COND_MAN_PAGES
 man_MANS += grub-render-label.1
@@ -594,6 +3910,17 @@ grubconf_SCRIPTS += 00_header
 CLEANFILES += 00_header
 EXTRA_DIST += 
 dist_noinst_DATA += util/grub.d/00_header.in 
+if COND_HOST_LINUX
+grubconf_SCRIPTS += 05_crypttab
+
+05_crypttab: $(top_builddir)/config.status util/grub.d/05_crypttab.in 
+	(for x in util/grub.d/05_crypttab.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x 05_crypttab
+	
+CLEANFILES += 05_crypttab
+EXTRA_DIST += 
+dist_noinst_DATA += util/grub.d/05_crypttab.in 
+endif COND_HOST_LINUX
 if COND_HOST_WINDOWS
 grubconf_SCRIPTS += 10_windows
 
@@ -682,6 +4009,17 @@ CLEANFILES += 20_linux_xen
 EXTRA_DIST += 
 dist_noinst_DATA += util/grub.d/20_linux_xen.in 
 endif COND_HOST_LINUX
+if COND_HOST_LINUX
+grubconf_SCRIPTS += 20_ppc_terminfo
+
+20_ppc_terminfo: $(top_builddir)/config.status util/grub.d/20_ppc_terminfo.in 
+	(for x in util/grub.d/20_ppc_terminfo.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x 20_ppc_terminfo
+	
+CLEANFILES += 20_ppc_terminfo
+EXTRA_DIST += 
+dist_noinst_DATA += util/grub.d/20_ppc_terminfo.in 
+endif COND_HOST_LINUX
 grubconf_SCRIPTS += 25_bli
 
 25_bli: $(top_builddir)/config.status util/grub.d/25_bli.in 
@@ -727,6 +4065,15 @@ grubconf_SCRIPTS += 41_custom
 CLEANFILES += 41_custom
 EXTRA_DIST += 
 dist_noinst_DATA += util/grub.d/41_custom.in 
+grubconf_SCRIPTS += 95_textmode
+
+95_textmode: $(top_builddir)/config.status util/grub.d/95_textmode.in 
+	(for x in util/grub.d/95_textmode.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x 95_textmode
+	
+CLEANFILES += 95_textmode
+EXTRA_DIST += 
+dist_noinst_DATA += util/grub.d/95_textmode.in 
 sbin_SCRIPTS += grub-mkconfig
 if COND_MAN_PAGES
 man_MANS += grub-mkconfig.8
@@ -781,6 +4128,62 @@ grub-reboot: $(top_builddir)/config.status util/grub-reboot.in
 CLEANFILES += grub-reboot
 EXTRA_DIST += 
 dist_noinst_DATA += util/grub-reboot.in 
+
+if COND_emu
+if COND_s390x
+sbin_SCRIPTS += grub-zipl-setup
+
+grub-zipl-setup: $(top_builddir)/config.status util/s390x/zipl2grub.pl.in 
+	(for x in util/s390x/zipl2grub.pl.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x grub-zipl-setup
+	
+CLEANFILES += grub-zipl-setup
+EXTRA_DIST += 
+dist_noinst_DATA += util/s390x/zipl2grub.pl.in 
+endif COND_s390x
+endif
+
+if COND_emu
+if COND_s390x
+platform_SCRIPTS += dracut-module-setup.sh
+
+dracut-module-setup.sh: $(top_builddir)/config.status util/s390x/dracut-module-setup.sh.in 
+	(for x in util/s390x/dracut-module-setup.sh.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x dracut-module-setup.sh
+	
+CLEANFILES += dracut-module-setup.sh
+EXTRA_DIST += 
+dist_noinst_DATA += util/s390x/dracut-module-setup.sh.in 
+endif COND_s390x
+endif
+
+if COND_emu
+if COND_s390x
+platform_SCRIPTS += dracut-grub.sh
+
+dracut-grub.sh: $(top_builddir)/config.status util/s390x/dracut-grub2.sh.in 
+	(for x in util/s390x/dracut-grub2.sh.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x dracut-grub.sh
+	
+CLEANFILES += dracut-grub.sh
+EXTRA_DIST += 
+dist_noinst_DATA += util/s390x/dracut-grub2.sh.in 
+endif COND_s390x
+endif
+
+if COND_emu
+if COND_s390x
+platform_SCRIPTS += dracut-zipl-refresh
+
+dracut-zipl-refresh: $(top_builddir)/config.status util/s390x/dracut-zipl-refresh.sh.in 
+	(for x in util/s390x/dracut-zipl-refresh.sh.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x dracut-zipl-refresh
+	
+CLEANFILES += dracut-zipl-refresh
+EXTRA_DIST += 
+dist_noinst_DATA += util/s390x/dracut-zipl-refresh.sh.in 
+endif COND_s390x
+endif
 noinst_SCRIPTS += grub-mkconfig_lib
 
 grub-mkconfig_lib: $(top_builddir)/config.status util/grub-mkconfig_lib.in 
@@ -1573,5 +4976,21 @@ luks2_test: $(top_builddir)/config.status tests/luks2_test.in
 CLEANFILES += luks2_test
 EXTRA_DIST += 
 dist_noinst_DATA += tests/luks2_test.in 
+check_SCRIPTS_native += test_asn1
+
+test_asn1: $(top_builddir)/config.status tests/test_asn1.in 
+	(for x in tests/test_asn1.in ; do cat $(srcdir)/"$$x"; done) | $(top_builddir)/config.status --file=$@:-
+	chmod a+x test_asn1
+	
+CLEANFILES += test_asn1
+EXTRA_DIST += 
+dist_noinst_DATA += tests/test_asn1.in 
 dist_grubconf_DATA += util/grub.d/README 
 dist_noinst_DATA += 
+
+if COND_emu
+if COND_s390x
+dist_grubconf_DATA += util/s390x/zipl2grub.conf.in 
+dist_noinst_DATA += 
+endif COND_s390x
+endif

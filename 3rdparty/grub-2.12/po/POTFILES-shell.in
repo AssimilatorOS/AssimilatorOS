@@ -5,6 +5,7 @@ util/grub-mkconfig_lib.in
 util/grub-reboot.in
 util/grub-set-default.in
 util/grub.d/00_header.in
+util/grub.d/05_crypttab.in
 util/grub.d/10_hurd.in
 util/grub.d/10_illumos.in
 util/grub.d/10_kfreebsd.in
@@ -13,8 +14,15 @@ util/grub.d/10_netbsd.in
 util/grub.d/10_windows.in
 util/grub.d/10_xnu.in
 util/grub.d/20_linux_xen.in
+util/grub.d/20_ppc_terminfo.in
 util/grub.d/25_bli.in
 util/grub.d/30_os-prober.in
 util/grub.d/30_uefi-firmware.in
 util/grub.d/40_custom.in
 util/grub.d/41_custom.in
+util/grub.d/95_textmode.in
+util/s390x/dracut-grub2.sh.in
+util/s390x/dracut-module-setup.sh.in
+util/s390x/dracut-zipl-refresh.sh.in
+util/s390x/zipl2grub.conf.in
+util/s390x/zipl2grub.pl.in
