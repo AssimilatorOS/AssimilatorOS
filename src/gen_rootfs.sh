@@ -6,6 +6,54 @@ set -o pipefail
 
 SCRIPT_NAME="$(basename "$0")"
 
+SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
+PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")"
+
+export IGNORE_IMAGE_FILE=0
+export BUILD_BUSYBOX=1
+export BUILD_KERNEL=1
+export BUILD_GRUB=1
+export BUILD_EFIBOOTMGR=1
+export BUILD_LINUXPAM=1
+export BUILD_JQ=1
+export BUILD_SQLITE3=1
+export BUILD_RSYNC=1
+export BUILD_NANO=1
+export BUILD_PARTCLONE=1
+export BUILD_XFSPROGS=1
+export BUILD_DIALOG=1
+
+function process_cmd_flags() {
+    retval=0
+    tmpflags=$(getopt -o 'ibkgepjsrncxd' --long 'ignore-image,skip-busybox,skip-kernel,skip-grub,skip-efibootmgr,skip-pam,skip-jq,skip-sqlite3,skip-rsync,skip-nano,skip-pclone,skip-xfs,skip-dialog' -n 'gen_rootfs' -- "$@") || retval=$?
+    if [[ $retval -ne 0 ]]; then
+        echo "Exit code $?: Exiting" >&2
+        exit 1
+    fi
+
+    eval set -- "$tmpflags"
+    unset tmpflags
+    while true; do
+        case "$1" in
+            '--ignore-image')    IGNORE_IMAGE_FILE=1           && shift && continue ;;
+            '--skip-busybox')    BUILD_BUSYBOX=0               && shift && continue ;;
+            '--skip-kernel')     BUILD_KERNEL=0                && shift && continue ;;
+            '--skip-grub')       BUILD_GRUB=0                  && shift && continue ;;
+            '--skip-efibootmgr') BUILD_EFIBOOTMGR=0            && shift && continue ;;
+            '--skip-pam')        BUILD_LINUXPAM=0              && shift && continue ;;
+            '--skip-jq')         BUILD_JQ=0                    && shift && continue ;;
+            '--skip-sqlite3')    BUILD_SQLITE3=0               && shift && continue ;;
+            '--skip-rsync')      BUILD_RSYNC=0                 && shift && continue ;;
+            '--skip-nano')       BUILD_NANO=0                  && shift && continue ;;
+            '--skip-pclone')     BUILD_PARTCLONE=0             && shift && continue ;;
+            '--skip-xfs')        BUILD_XFSPROGS=0              && shift && continue ;;
+            '--skip-dialog')     BUILD_DIALOG=0                && shift && continue ;;
+            '--')                                                 shift && break    ;;
+            *)                echo 'Invalid flag! Exiting' >&2 && exit 1 ;;
+        esac
+    done
+}
+
 function root_chk() {
     if [[ "${EUID}" -ne 0 ]]; then
         echo "${SCRIPT_NAME}: Please run as root. Exiting" >&2
@@ -31,39 +79,47 @@ function check_tools() {
 }
 
 function create_vdisk() {
-    echo "${SCRIPT_NAME}: Creating loopback filesystem"
-    if [[ ! -f vdisk.img ]]; then
-        qemu-img create vdisk.img 4G
+    if [[ $IGNORE_IMAGE_FILE -ne 1 ]]; then
+        echo "${SCRIPT_NAME}: Creating loopback filesystem"
+        if [[ ! -f vdisk.img ]]; then
+            qemu-img create vdisk.img 4G
+        else
+            echo "${SCRIPT_NAME}: File already exists! Exiting"
+            exit 17
+        fi
+        # create temp loop dev
+        losetup /dev/loop0 "$PROJ_DIR/vdisk.img"
+        # partition device
+        sfdisk /dev/loop0 < "$PROJ_DIR/vdisk.sfdisk"
+        sleep 5
+        partprobe -s
+        losetup -v -D /dev/loop0
+        losetup -v -P /dev/loop0 "$PROJ_DIR/vdisk.img"
+        sleep 1
+        # format ESP
+        mkfs.vfat -v -n ESP -F 32 /dev/loop0p1
+        fatlabel /dev/loop0p1 ESP
+        sleep 1
+        # format the root volume
+        mkfs.xfs /dev/loop0p2
+        xfs_admin -L Assimilator /dev/loop0p2
+        sleep 1
+        lsblk --fs
     else
-        echo "${SCRIPT_NAME}: File already exists! Exiting"
-        exit 17
+        echo "${SCRIPT_NAME}: Using existing image"
     fi
-    # create temp loop dev
-    losetup /dev/loop0 vdisk.img
-    # partition device
-    sfdisk /dev/loop0 < vdisk.sfdisk
-    sleep 5
-    partprobe -s
-    losetup -v -D /dev/loop0
-    losetup -v -P /dev/loop0 vdisk.img
-    sleep 1
-    # format ESP
-    mkfs.vfat -v -n ESP -F 32 /dev/loop0p1
-    fatlabel /dev/loop0p1 ESP
-    sleep 1
-    # format the root volume
-    mkfs.xfs /dev/loop0p2
-    xfs_admin -L Assimilator /dev/loop0p2
-    sleep 1
-    lsblk --fs
 }
 
 function mount_image() {
-    mount -v -t xfs -L Assimilator rootfs
-    # create mount point for ESP
-    install -v -d -m 755 -o root -g root rootfs/System/boot
-    # mount ESP
-    mount -v -t vfat -L ESP rootfs/System/boot
+    if [[ $IGNORE_IMAGE_FILE -ne 1 ]]; then
+        mount -v -t xfs -L Assimilator "$PROJ_DIR/rootfs"
+        # create mount point for ESP
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/boot"
+        # mount ESP
+        mount -v -t vfat -L ESP "$PROJ_DIR/rootfs/System/boot"
+    else
+        echo "${SCRIPT_NAME}: Image is already mounted. Skipping"
+    fi
 }
 
 function create_opt_local_tree() {
@@ -196,7 +252,7 @@ function create_symlinks() {
 
 function install_configuration_files() {
     # install configuration files
-    pushd rootfs >/dev/null
+    pushd "$PROJ_DIR/rootfs" >/dev/null
         touch etc/hostname
         ln -sv etc/hostname etc/HOSTNAME
         touch etc/network/interfaces
@@ -253,7 +309,7 @@ function install_configuration_files() {
 }
 
 function create_dir_tree() {
-    pushd rootfs >/dev/null
+    pushd "$PROJ_DIR/rootfs" >/dev/null
         install -v -d -m 755 -o root -g root dev
         install -v -d -m 755 -o root -g root opt
         install -v -d -m 755 -o root -g root opt/local
@@ -273,24 +329,24 @@ function create_dir_tree() {
 
 function build_busybox() {
     # out of source builds don't seem to work, so in-source we go
-    pushd 3rdparty/busybox >/dev/null
+    pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
-        cp -v ../BusyBox.config .config
+        cp -v "$PROJ_DIR/3rdparty/BusyBox.config" .config
         make oldconfig
         make
     popd >/dev/null
 }
 
 function install_busybox() {
-    pushd 3rdparty/busybox >/dev/null
+    pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         # we use some applets that require setuid rights
-        install -v -m 4755 -o root -g root busybox ../../rootfs/System/bin/
-        install -v -m 644 -o root -g root docs/busybox.1 ../../rootfs/System/share/man/man1/
-        pushd ../../rootfs/System/share/man/man1 >/dev/null
+        install -v -m 4755 -o root -g root busybox "$PROJ_DIR/rootfs/System/bin/"
+        install -v -m 644 -o root -g root docs/busybox.1 "$PROJ_DIR/rootfs/System/share/man/man1/"
+        pushd "$PROJ_DIR/rootfs/System/share/man/man1" >/dev/null
             gzip -v -9 busybox.1
         popd >/dev/null
         # now make our symlinks
-        pushd ../../rootfs/System/bin >/dev/null
+        pushd "$PROJ_DIR/rootfs/System/bin" >/dev/null
             for binary in $(./busybox --list); do
                 ln -sv busybox "${binary}"
             done
@@ -307,22 +363,22 @@ function install_busybox() {
 }
 
 function build_kernel() {
-    pushd 3rdparty/linux >/dev/null
+    pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         # ensure we are working with a clean tree
         rm -v -r -f build
         # now lets build this out-of-source
         mkdir -v build
         cd build
         make KBUILD_SRC=../ -f ../Makefile mrproper
-        cp -v ../../LinuxKernel.config .config
+        cp -v "$PROJ_DIR/3rdparty/LinuxKernel.config" .config
         make KBUILD_SRC=../ -f ../Makefile oldconfig
-        make
+        make -j4
         cd -
     popd >/dev/null
 }
 
 function install_kernel() {
-    pushd 3rdparty/linux >/dev/null
+    pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         cd build
         make INSTALL_PATH=../../../rootfs/System/boot install ||:
         make INSTALL_MOD_PATH=../../../rootfs/System/lib/modules modules_install ||:
@@ -333,26 +389,151 @@ function install_kernel() {
 }
 
 function build_grub() {
-    true
+    pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
+        ulimit -a
+        touch docs/grub.texi
+        cp docs/grub.texi docs/grub2.texi
+        rm -v -r -f build
+        ./autogen.sh
+        export CFLAGS="-fno-strict-aliasing -fno-inline-functions-called-once "
+        export CXXFLAGS=" "
+        export FFLAGS=" "
+        mkdir -v build
+        cd build
+        FS_MODULES="btrfs ext2 xfs jfs reiserfs"
+        CD_MODULES="all_video boot cat configfile echo true font gfxmenu gfxterm gzio halt iso9660 jpeg minicmd normal \
+                    part_apple part_msdos part_gpt password password_pbkdf2 png reboot search search_fs_uuid \
+                    search_fs_file search_label sleep test video fat loadenv loopback chain efifwsetup efinet read tpm \
+                    tpm2 memdisk tar squash4 xzio linuxefi"
+        PXE_MODULES="tftp http efinet"
+        CRYPTO_MODULES="luks luks2 gcry_rijndael gcry_sha1 gcry_sha256 gcry_sha512 crypttab"
+        GRUB_MODULES="${CD_MODULES} ${FS_MODULES} ${PXE_MODULES} ${CRYPTO_MODULES} mdraid09 mdraid1x lvm serial"
+        ../configure \
+            TARGET_LDFLAGS="-static" \
+            --prefix=/System \
+            --sysconfdir=/System/cfg \
+            --target=x86_64-pc-linux-gnu \
+            --with-platform=efi \
+            --program-transform-name=s,grub,grub2,
+        make -j4
+        # we don't do secure boot for now
+        # create the shim image
+        # echo "sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md" > sbat.csv
+        # echo "grub,4,Free Software Foundation,grub,2.12,https://www.gnu.org/software/grub/" >> sbat.csv
+        # echo "grub.assimilatoros,1,Assimilator OS,grub,2.12,https://github.com/greeneg/AssimilatorOS" >> sbat.csv
+        mkdir -pv ./fonts
+        cp -v /usr/share/grub2/themes/*/*.pf2 ./fonts
+        cp -v ./unicode.pf2 ./fonts
+        tar --sort=name -cvf - ./fonts | mksquashfs - memdisk.sqsh -tar -comp xz
+
+        # again, not doing secure boot for now
+        # ./grub-mkimage -v -O x86_64-efi -o grub.efi --memdisk=./memdisk.sqsh --prefix= -d grub-core --sbat=sbat.csv \
+        #    "${GRUB_MODULES}"
+        # shellcheck disable=SC2086
+        ./grub-mkimage -v -O x86_64-efi -o grub.efi --memdisk=./memdisk.sqsh --prefix= -d grub-core \
+            ${GRUB_MODULES}
+
+
+        cd -
+    popd >/dev/null
 }
 
 function install_grub() {
+    pushd 3rdparty/grub >/dev/null
+        cd build
+            make DESTDIR="$PROJ_DIR/rootfs" install
+            install -v -m 644 -o root -g root grub.efi "$PROJ_DIR/rootfs/System/lib/grub2/x86_64-efi/"
+        cd -
+        rm -v -r -f build
+        # create default directory in /System/cfg
+        install -d -v -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/default"
+        # install extra scripts
+        install -v -m 644 -o root -g root vendor-configs/20_memtest86+ "$PROJ_DIR/rootfs/System/cfg/grub.d/"
+        install -v -m 644 -o root -g root vendor-configs/90_persistent "$PROJ_DIR/rootfs/System/cfg/grub.d/"
+        # install defaults
+        install -v -m 644 -o root -g root vendor-configs/grub.default "$PROJ_DIR/rootfs/System/cfg/default/grub"
+        # we don't ship XEN nor PPC
+        rm -v "$PROJ_DIR/rootfs/etc/grub.d/20_linux_xen" "$PROJ_DIR/rootfs/etc/grub.d/20_ppc_terminfo"
+        # strip binaries
+        # note that strip errors due to a couple files being scripts, so we ignore the error case
+        # shellcheck disable=SC2086
+        strip -s -v $PROJ_DIR/rootfs/bin/grub2-* ||:
+        # shellcheck disable=SC2086
+        strip -s -v $PROJ_DIR/rootfs/lib/grub2/x86_64-efi/* ||:
+        # now copy module directory to ESP
+        cp -v -a "$PROJ_DIR/rootfs/lib/grub2" "$PROJ_DIR/rootfs/boot/"
+    popd >/dev/null
+}
+
+function build_efibootmgr() {
+    true
+}
+
+function install_efibootmgr() {
+    true
+}
+
+function build_linuxpam() {
+    true
+}
+
+function install_linuxpam() {
+    true
+}
+
+function build_jq() {
+    true
+}
+
+function install_jq() {
+    true
+}
+
+function build_sqlite3() {
+    true
+}
+
+function install_sqlite3() {
+    true
+}
+
+function build_rsync() {
+    true
+}
+
+function install_rsync() {
     true
 }
 
 function build_3rdparty() {
     # build and install busybox
-    build_busybox
-    install_busybox
+    if [[ $BUILD_BUSYBOX == 1 ]]; then
+        build_busybox
+        install_busybox
+    fi
 
     # build and install kernel
-    build_kernel
-    install_kernel
+    if [[ $BUILD_KERNEL == 1 ]]; then
+        build_kernel
+        install_kernel
+    fi
 
     # build and install GNU Grub2 bootloader
-    build_grub
-    install_grub
+    if [[ $BUILD_GRUB == 1 ]]; then
+        build_grub
+        install_grub
+    fi
+
+    # grub needs efibootmgr for some of its tools
+    if [[ $BUILD_EFIBOOTMGR == 1 ]]; then
+        build_efibootmgr
+        install_efibootmgr
+    fi
     exit
+
+    # build Linux PAM
+    build_linuxpam
+    install_linuxpam
 
     # build and install JQ
     build_jq
@@ -379,11 +560,17 @@ function build_3rdparty() {
     install_xfsprogs
 
     # build and install dialog
+    build_dialog
+    install_dialog
+}
+
+function build_src() {
+    true
 }
 
 function install_host_libs() {
     true
-    pushd "${proj_dir}/rootfs" >/dev/null
+    pushd "${PROJ_DIR}/rootfs" >/dev/null
         for binary in "bin/busybox" "bin/jq"; do
             ldd $binary | while read -r line; do
                 echo "LINE: $line"
@@ -393,20 +580,16 @@ function install_host_libs() {
 }
 
 function main() {
+    # process flags
+    process_cmd_flags "$@"
+
     # check if running as root
     root_chk
 
-    # get where script lives
-    local source_dir
-    source_dir="$(dirname "${BASH_SOURCE[0]}")"
-
-    local proj_dir
-    proj_dir="$(dirname "$(cd "$source_dir" &> /dev/null && pwd)")"
-
-    echo "${SCRIPT_NAME}: project directory: ${proj_dir}" >&2
+    echo "${SCRIPT_NAME}: project directory: ${PROJ_DIR}" >&2
 
     # chdir to proj_dir
-    pushd "${proj_dir}" >/dev/null
+    pushd "${PROJ_DIR}" >/dev/null
         # check if needed tools are installed
         check_tools
 
@@ -421,6 +604,9 @@ function main() {
 
         # build and install 3rdparty tools
         build_3rdparty
+
+        # build OUR tools
+        build_src
 
         # install libraries
         install_host_libs
