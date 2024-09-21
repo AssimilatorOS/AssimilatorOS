@@ -13,6 +13,7 @@ Currently, Assimilator OS uses the following components for the operating system
 | BusyBox | 1.36.1 |
 | Linux Kernel | 5.10.226 (LTS) |
 | GNU Grub | 2.12 |
+| EFI Boot Manager | 18 |
 | JQ | 1.7.1 |
 | SQLite3 | 3.46.1 |
 | Rsync | 3.3.0 |
