@@ -1,0 +1,12 @@
+.*.sw?
+*.E
+*.o
+*.patch
+*.S
+efibootmgr-*.tar.*
+core.*
+efibootmgr*.zip
+efibootmgr.spec
+.*.d
+cov-int
+scan-results/
