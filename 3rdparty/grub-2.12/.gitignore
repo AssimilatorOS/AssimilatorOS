@@ -1,0 +1,7 @@
+__pycache__
+docs/grub2.info
+docs/grub2.info-1
+docs/grub2.info-2
+docs/grub2.texi
+po/grub2.pot
+po/*.po~
