@@ -9,7 +9,7 @@ The operating system, through symlinks adheres to the FHS, however, borrows from
 Currently, Assimilator OS uses the following components for the operating system:
 
 | Component | Version | License | URL |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- |
 | BusyBox | 1.36.1 | [GPLv2](3rdparty/busybox-1.36.1/LICENSE) | https://www.busybox.net/ |
 | Linux Kernel | 5.10.226 (LTS) | [GPLv2](3rdparty/linux-5.10.226/COPYING) | https://www.kernel.org/ |
 | GNU Grub | 2.12 | [GPLv3](3rdparty/grub-2.12) | https://www.gnu.org/software/grub/ |
