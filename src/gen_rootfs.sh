@@ -75,6 +75,8 @@ function check_tools() {
     if ! command -v sfdisk >/dev/null;   then echo "Util-Linux tools not installed" >&2 && exit 2; fi
     echo "${SCRIPT_NAME}: Test for XFS mkfs.xfs tool" >&2
     if ! command -v mkfs.xfs >/dev/null; then echo "XFS Filesystem tools not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for ManDoc tool" >&2
+    if ! command -v mandoc >/dev/null;   then echo "ManDoc not installed" >&2 && exit 2; fi
     echo "${SCRIPT_NAME}: All needed tools are present" >&2
 }
 
@@ -432,8 +434,6 @@ function build_grub() {
         # shellcheck disable=SC2086
         ./grub-mkimage -v -O x86_64-efi -o grub.efi --memdisk=./memdisk.sqsh --prefix= -d grub-core \
             ${GRUB_MODULES}
-
-
         cd -
     popd >/dev/null
 }
@@ -465,8 +465,30 @@ function install_grub() {
     popd >/dev/null
 }
 
+function build_efivar() {
+    pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
+        make -j4
+    popd >/dev/null
+}
+
+function install_efivar() {
+    pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
+        make DESTDIR="$PROJ_DIR/rootfs" \
+             BINDIR="/System/bin" \
+             LIBDIR="/System/lib64" \
+             DATADIR="/System/share" \
+             INCLUDEDIR="/System/include" install
+    popd >/dev/null
+}
+
 function build_efibootmgr() {
-    true
+    pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
+        sed -e '/extern int efi_set_verbose/d' -i "src/efibootmgr.c"
+        LOADER="grub.efi"  # default loader
+        VENDOR="AssimilatorOS"
+        OPT_FLAGS="-O2 -g -m64 -fmessage-length=0 -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables"
+        make -j4 CFLAGS="$OPT_FLAGS -flto -fPIE -pie" OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR"
+    popd >/dev/null
 }
 
 function install_efibootmgr() {
@@ -524,8 +546,11 @@ function build_3rdparty() {
         install_grub
     fi
 
-    # grub needs efibootmgr for some of its tools
+    # efibootmgr needs a new enough version of efivar
     if [[ $BUILD_EFIBOOTMGR == 1 ]]; then
+        build_efivar
+        install_efivar
+        exit
         build_efibootmgr
         install_efibootmgr
     fi
