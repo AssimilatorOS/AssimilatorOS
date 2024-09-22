@@ -34,7 +34,10 @@ pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
 popd >/dev/null
 pushd "${PROJ_DIR}" >/dev/null
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
-    make clean ||:
+        make clean ||:
+    popd >/dev/null
+    pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
+        make clean ||:
     popd >/dev/null
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
