@@ -25,9 +25,46 @@ export BUILD_PARTCLONE=1
 export BUILD_XFSPROGS=1
 export BUILD_DIALOG=1
 
+function show_help() {
+    echo "${SCRIPT_NAME} - Generate an Assimilator OS root filesystem"
+    echo "==========================================================="
+    echo ""
+    echo "OPTIONS:"
+    echo "  --ignore-image      Don't bail out script if image file is present"
+    echo "  --skip-busybox      Don't build busybox"
+    echo "  --skip-kernel       Don't build the Linux kernel"
+    echo "  --skip-grub         Don't build GNU Grub v2"
+    echo "  --skip-efibootmgr   Don't build the EFI tools (efivar and efibootmgr)"
+    echo "  --skip-pam          Don't build Linux PAM"
+    echo "  --skip-jq           Don't build JQ"
+    echo "  --skip-sqlite3      Don't build SQLite3 DB"
+    echo "  --skip-rsync        Don't build RSync"
+    echo "  --skip-nano         Don't build GNU Nano editor"
+    echo "  --skip-partclone    Don't build the PartClone tools"
+    echo "  --skip-xfsprogs     Don't build the XFS programs"
+    echo "  --skip-dialog       Don't build the Dialog tool"
+    echo ""
+    echo "Report all bugs to https://github.com/greeneg/AssimilatorOS/issues"
+}
+
+function show_version() {
+    echo "${SCRIPT_NAME} - Generate an Assimilator OS root filesystem"
+    echo "==========================================================="
+    echo "Author: Gary L. Greene, Jr."
+    echo "Version: 1.0"
+    echo "License: GPL version 2"
+    echo ""
+    echo "Report all bugs to https://github.com/greeneg/AssimilatorOS/issues"
+}
+
 function process_cmd_flags() {
     retval=0
-    tmpflags=$(getopt -o 'ibkgepjsrncxd' --long 'ignore-image,skip-busybox,skip-kernel,skip-grub,skip-efibootmgr,skip-pam,skip-jq,skip-sqlite3,skip-rsync,skip-nano,skip-pclone,skip-xfs,skip-dialog' -n 'gen_rootfs' -- "$@") || retval=$?
+    tmpflags=$( \
+        getopt \
+            -o 'hv' \
+            --long 'ignore-image,skip-busybox,skip-kernel,skip-grub,skip-efibootmgr,skip-pam,skip-jq,skip-sqlite3,skip-rsync,skip-nano,skip-partclone,skip-xfsprogs,skip-dialog' \
+            -n 'gen_rootfs' -- "$@" \
+    ) || retval=$?
     if [[ $retval -ne 0 ]]; then
         echo "Exit code $?: Exiting" >&2
         exit 1
@@ -47,9 +84,11 @@ function process_cmd_flags() {
             '--skip-sqlite3')    BUILD_SQLITE3=0               && shift && continue ;;
             '--skip-rsync')      BUILD_RSYNC=0                 && shift && continue ;;
             '--skip-nano')       BUILD_NANO=0                  && shift && continue ;;
-            '--skip-pclone')     BUILD_PARTCLONE=0             && shift && continue ;;
-            '--skip-xfs')        BUILD_XFSPROGS=0              && shift && continue ;;
+            '--skip-partclone')  BUILD_PARTCLONE=0             && shift && continue ;;
+            '--skip-xfsprogs')   BUILD_XFSPROGS=0              && shift && continue ;;
             '--skip-dialog')     BUILD_DIALOG=0                && shift && continue ;;
+            '-v')                show_version                           && exit 0   ;;
+            '-h')                show_help                              && exit 0   ;;
             '--')                                                 shift && break    ;;
             *)                echo 'Invalid flag! Exiting' >&2 && exit 1 ;;
         esac
@@ -622,15 +661,44 @@ function install_linuxpam() {
         # shellcheck disable=SC2086
         strip -v -s $PROJ_DIR/rootfs/System/lib64/security/pam*.so
         strip -v -s "$PROJ_DIR/rootfs/System/lib64/security/pam_filter/upperLOWER"
+        strip -v -s "$PROJ_DIR/rootfs/System/lib64/libpam.so.0.85.1"
+        strip -v -s "$PROJ_DIR/rootfs/System/lib64/libpamc.so.0.82.1"
+        strip -v -s "$PROJ_DIR/rootfs/System/lib64/libpam_misc.so.0.82.1"
     popd >/dev/null
 }
 
 function build_jq() {
-    true
+    local tool="JQ"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/jq" >/dev/null
+        mkdir -pv build
+        pushd build >/dev/null
+            ../configure --prefix=/System \
+                         --bindir=/System/bin \
+                         --libdir=/System/lib64 \
+                         --sysconfdir=/System/cfg \
+                         --disable-docs
+            make -j4
+        popd >/dev/null
+    popd >/dev/null
 }
 
 function install_jq() {
-    true
+    local tool="JQ"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/jq" >/dev/null
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" install
+        popd >/dev/null
+    popd >/dev/null
+    rm -vf "$PROJ_DIR/rootfs/lib64/libjq.a"
+    rm -vf "$PROJ_DIR/rootfs/lib64/libjq.la"
+    # compress the man page for jq
+    pushd "$PROJ_DIR/rootfs/System/share/man/man1" >/dev/null
+        gzip -v -9 jq.1
+    popd >/dev/null
+    strip -v -s "$PROJ_DIR/rootfs/bin/jq"
+    strip -v -s "$PROJ_DIR/rootfs/lib64/libjq.so.1.0.4"
 }
 
 function build_sqlite3() {
@@ -681,11 +749,13 @@ function build_3rdparty() {
         build_linuxpam
         install_linuxpam
     fi
-    exit
 
     # build and install JQ
-    build_jq
-    install_jq
+    if [[ $BUILD_JQ == 1 ]]; then
+        build_jq
+        install_jq
+    fi
+    exit
 
     # build and install SQLite3
     build_sqlite3
