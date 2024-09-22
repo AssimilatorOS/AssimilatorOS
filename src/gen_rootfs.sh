@@ -9,6 +9,8 @@ SCRIPT_NAME="$(basename "$0")"
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")"
 
+source "$PROJ_DIR/src/termcolors.shlib"
+
 export IGNORE_IMAGE_FILE=0
 export BUILD_BUSYBOX=1
 export BUILD_KERNEL=1
@@ -330,6 +332,8 @@ function create_dir_tree() {
 }
 
 function build_busybox() {
+    local tool="BusyBox"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     # out of source builds don't seem to work, so in-source we go
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
@@ -340,6 +344,8 @@ function build_busybox() {
 }
 
 function install_busybox() {
+    local tool="BusyBox"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         # we use some applets that require setuid rights
         install -v -m 4755 -o root -g root busybox "$PROJ_DIR/rootfs/System/bin/"
@@ -365,6 +371,8 @@ function install_busybox() {
 }
 
 function build_kernel() {
+    local tool="Linux Kernel"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         # ensure we are working with a clean tree
         rm -v -r -f build
@@ -380,6 +388,8 @@ function build_kernel() {
 }
 
 function install_kernel() {
+    local tool="Linux Kernel"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         cd build
         make INSTALL_PATH=../../../rootfs/System/boot install ||:
@@ -391,6 +401,8 @@ function install_kernel() {
 }
 
 function build_grub() {
+    local tool="GNU Grub v2"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
         ulimit -a
         touch docs/grub.texi
@@ -439,6 +451,8 @@ function build_grub() {
 }
 
 function install_grub() {
+    local tool="GNU Grub v2"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
         cd build
             make DESTDIR="$PROJ_DIR/rootfs" install
@@ -454,8 +468,8 @@ function install_grub() {
         # create default directory in /System/cfg
         install -d -v -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/default"
         # install extra scripts
-        install -v -m 644 -o root -g root vendor-configs/20_memtest86+ "$PROJ_DIR/rootfs/System/cfg/grub.d/"
-        install -v -m 644 -o root -g root vendor-configs/90_persistent "$PROJ_DIR/rootfs/System/cfg/grub.d/"
+        install -v -m 755 -o root -g root vendor-configs/20_memtest86+ "$PROJ_DIR/rootfs/System/cfg/grub.d/"
+        install -v -m 755 -o root -g root vendor-configs/90_persistent "$PROJ_DIR/rootfs/System/cfg/grub.d/"
         # install defaults
         install -v -m 644 -o root -g root vendor-configs/grub.default "$PROJ_DIR/rootfs/System/cfg/default/grub"
         # we don't ship XEN nor PPC
@@ -472,12 +486,16 @@ function install_grub() {
 }
 
 function build_efivar() {
+    local tool="EFI Var tools"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
         make -j4
     popd >/dev/null
 }
 
 function install_efivar() {
+    local tool="EFI Var tools"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
         make DESTDIR="$PROJ_DIR/rootfs" \
              BINDIR="/System/bin" \
@@ -498,6 +516,8 @@ function install_efivar() {
 }
 
 function build_efibootmgr() {
+    local tool="EFI Boot Manager"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
         sed -e '/extern int efi_set_verbose/d' -i "src/efibootmgr.c"
         LOADER="grub.efi"  # default loader
@@ -514,6 +534,8 @@ function build_efibootmgr() {
 }
 
 function install_efibootmgr() {
+    local tool="EFI Boot Manager"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
         install -v -m 755 -o root -g root src/efibootdump "$PROJ_DIR/rootfs/System/sbin/"
         install -v -m 755 -o root -g root src/efibootmgr  "$PROJ_DIR/rootfs/System/sbin/"
@@ -527,11 +549,80 @@ function install_efibootmgr() {
 }
 
 function build_linuxpam() {
-    true
+    local tool="Linux PAM"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/pam" >/dev/null
+        mkdir -p -v build
+        pushd build >/dev/null
+            ../configure --prefix=/System \
+                         --bindir=/System/bin \
+                         --sbindir=/System/sbin \
+                         --sysconfdir=/System/cfg \
+                         --docdir=/System/share/doc/Linux-PAM \
+                         --includedir=/System/include/security \
+                         --libdir=/System/lib64 \
+                         --enable-isadir=/System/lib64/security \
+                         --enable-securedir=/System/lib64/security \
+                         --enable-read-both-confs \
+                         --disable-doc \
+                         --disable-examples \
+                         --disable-prelude \
+                         --disable-db \
+                         --disable-nis \
+                         --disable-logind \
+                         --disable-econf \
+                         --disable-rpath \
+                         --disable-selinux
+            make -j4
+            gcc -fwhole-program -fpie -pie -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -O2 -g -m64 -fmessage-length=0 \
+                -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables \
+                -I../libpam/include ../unix2_chkpwd.c -o ./unix2_chkpwd -L../libpam/.libs -lpam
+        popd >/dev/null
+    popd >/dev/null
 }
 
 function install_linuxpam() {
-    true
+    local tool="Linux PAM"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/pam" >/dev/null
+        # first create our required directories
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/pam.d"
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/security"
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/security/limits.d"
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/security/namespace.d"
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/lib/motd.d"
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/lib/tmpfiles.d"
+        # now lets install Linux PAM
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" install
+        popd >/dev/null
+        # docs
+        pushd modules >/dev/null
+            install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/share/doc/Linux-PAM/modules"
+            for mod in pam_*/README; do
+                install -v -m 644 -o root -g root "$mod" "$PROJ_DIR/rootfs/System/share/doc/Linux-PAM/modules/README.${mod%/*}"
+            done
+        popd >/dev/null
+        # install our pam configuration files
+        for pam_conf in "common-account" "common-auth" "common-password" "common-session" "other" \
+                        "postlogin-account" "postlogin-auth" "postlogin-password" "postlogin-session"; do
+            install -v -m 644 "$PROJ_DIR/configs/pam.d/$pam_conf" "$PROJ_DIR/rootfs/System/cfg/pam.d/"
+        done
+        install -v -m 755 -o root -g root build/unix2_chkpwd "$PROJ_DIR/rootfs/System/bin/"
+        gzip -v -c -9 ./unix2_chkpwd.8 > build/unix2_chkpwd.8.gz
+        install -v -m 644 -o root -g root build/unix2_chkpwd.8.gz "$PROJ_DIR/rootfs/System/share/man/man8/"
+        install -v -m 644 -o root -g root "$PROJ_DIR/configs/pam.tmpfiles" "$PROJ_DIR/rootfs/System/lib/tmpfiles.d/"
+        # nuke all the .la files
+        find "$PROJ_DIR/rootfs/" -type f -name "*.la" -exec rm -vf {} \;
+        strip -v -s "$PROJ_DIR/rootfs/bin/faillock"
+        strip -v -s "$PROJ_DIR/rootfs/bin/mkhomedir_helper"
+        strip -v -s "$PROJ_DIR/rootfs/bin/pam_timestamp_check"
+        strip -v -s "$PROJ_DIR/rootfs/bin/unix_chkpwd"
+        strip -v -s "$PROJ_DIR/rootfs/bin/unix2_chkpwd"
+        # shellcheck disable=SC2086
+        strip -v -s $PROJ_DIR/rootfs/System/lib64/security/pam*.so
+        strip -v -s "$PROJ_DIR/rootfs/System/lib64/security/pam_filter/upperLOWER"
+    popd >/dev/null
 }
 
 function build_jq() {
@@ -584,11 +675,13 @@ function build_3rdparty() {
         build_efibootmgr
         install_efibootmgr
     fi
-    exit
 
     # build Linux PAM
-    build_linuxpam
-    install_linuxpam
+    if [[ $BUILD_LINUXPAM == 1 ]]; then
+        build_linuxpam
+        install_linuxpam
+    fi
+    exit
 
     # build and install JQ
     build_jq
