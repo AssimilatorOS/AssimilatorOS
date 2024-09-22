@@ -23,6 +23,7 @@ losetup -v -D ||:
 rm -fv "${PROJ_DIR}/vdisk.img" ||:
 rm -rfv "${PROJ_DIR}/3rdparty/busybox/build" ||:
 rm -rfv "${PROJ_DIR}/3rdparty/grub/build" ||:
+rm -rfv "${PROJ_DIR}/3rdparty/pam/build" ||:
 pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
     rm -rfv __pycache__/
     rm -fv docs/grub2.info
@@ -41,7 +42,7 @@ pushd "${PROJ_DIR}" >/dev/null
         VENDOR="AssimilatorOS"
         make OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR" clean ||:
         # remove extra stuff from compressing man pages
-        rm -v src/*.8.gz ||:
+        rm -vf src/*.8.gz ||:
     popd >/dev/null
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
