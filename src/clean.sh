@@ -40,6 +40,8 @@ pushd "${PROJ_DIR}" >/dev/null
         LOADER="grub.efi"  # default loader
         VENDOR="AssimilatorOS"
         make OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR" clean ||:
+        # remove extra stuff from compressing man pages
+        rm -v src/*.8.gz ||:
     popd >/dev/null
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
