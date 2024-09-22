@@ -24,4 +24,4 @@ Currently, Assimilator OS uses the following components for the operating system
 | Dialog | 1.3 | | |
 | XFS Progs | 6.9.0 | | |
 
-Individual 3<super>rd</super>-party components are licensed under their own terms and conditions. This project "vendors" components to ensure that the system is buildable at any time. Periodically, the vendored versions will be replaced with newer versions or replacement libraries and tooling designed for smaller installations.
+Individual 3rd-party components are licensed under their own terms and conditions. This project "vendors" components to ensure that the system is buildable at any time. Periodically, the vendored versions will be replaced with newer versions or replacement libraries and tooling designed for smaller installations.
