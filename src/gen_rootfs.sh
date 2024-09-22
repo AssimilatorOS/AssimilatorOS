@@ -193,7 +193,7 @@ function create_cfg_tree() {
         install -v -d -m 755 -o root -g root network/if-pre-up.d
         install -v -d -m 755 -o root -g root network/if-up.d
         install -v -d -m 755 -o root -g root profile.d
-        install -v -d -m 755 -o root -g root services.d
+        install -v -d -m 755 -o root -g root svcmgr/services.d
         install -v -d -m 755 -o root -g root opt
         install -v -d -m 755 -o root -g root skel
         ln -sv ../opt/local/etc local
@@ -702,11 +702,37 @@ function install_jq() {
 }
 
 function build_sqlite3() {
-    true
+    local tool="SQLite3"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/sqlite3" >/dev/null
+        mkdir -pv build
+        pushd build >/dev/null
+            ../configure --prefix=/System \
+                         --bindir=/System/bin \
+                         --libdir=/System/lib64 \
+                         --sysconfdir=/System/cfg \
+                         --enable-readline \
+                         --enable-session
+            make -j4
+        popd >/dev/null
+    popd >/dev/null
 }
 
 function install_sqlite3() {
-    true
+    local tool="SQLite3"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/sqlite3" >/dev/null
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" install
+        popd >/dev/null
+        rm -vf "$PROJ_DIR/rootfs/lib64/libsqlite3.a"
+        rm -vf "$PROJ_DIR/rootfs/lib64/libsqlite3.la"
+        strip -v -s "$PROJ_DIR/rootfs/bin/sqlite3"
+        strip -v -s "$PROJ_DIR/rootfs/lib64/libsqlite3.so.0.8.6"
+    popd >/dev/null
+    pushd "$PROJ_DIR/rootfs/System/share/man/man1" >/dev/null
+        gzip -v -9 sqlite3.1
+    popd >/dev/null
 }
 
 function build_rsync() {
@@ -714,6 +740,30 @@ function build_rsync() {
 }
 
 function install_rsync() {
+    true
+}
+
+function build_nano() {
+    true
+}
+
+function install_nano() {
+    true
+}
+
+function build_xfsprogs() {
+    true
+}
+
+function install_xfsprogs() {
+    true
+}
+
+function build_dialog() {
+    true
+}
+
+function install_dialog() {
     true
 }
 
@@ -755,19 +805,17 @@ function build_3rdparty() {
         build_jq
         install_jq
     fi
-    exit
 
     # build and install SQLite3
-    build_sqlite3
-    install_sqlite3
+    if [[ $BUILD_SQLITE3 == 1 ]]; then
+        build_sqlite3
+        install_sqlite3
+    fi
+    exit
 
     # build and install Rsync
     build_rsync
     install_rsync
-
-    # build and install PartClone
-    build_partclone
-    install_partclone
 
     # build and install GNU Nano
     build_nano
@@ -780,6 +828,10 @@ function build_3rdparty() {
     # build and install dialog
     build_dialog
     install_dialog
+
+    # build and install PartClone
+    build_partclone
+    install_partclone
 }
 
 function build_src() {
