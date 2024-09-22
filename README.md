@@ -16,7 +16,7 @@ Currently, Assimilator OS uses the following components for the operating system
 | EFI Variables library | 39 | [LGPLv2.1](3rdparty/efivar-39/COPYING) | https://github.com/rhboot/efivar |
 | EFI Boot Manager | 18 | [GPLv2](3rdparty/efibootmgr-18/COPYING) | https://github.com/rhboot/efibootmgr |
 | Linux PAM | 1.6.1 | [GPLv2/BSD-3 Clause](3rdparty/Linux-PAM-1.6.1/COPYING) | https://github.com/linux-pam/linux-pam |
-| JQ | 1.7.1 | | |
+| JQ | 1.7.1 | [CC-BY-3.0/MIT](3rdparty/jq-1.7.1/COPYING) | https://jqlang.github.io/jq/ |
 | SQLite3 | 3.46.1 | | |
 | Rsync | 3.3.0 | | |
 | PartClone | 0.3.32 | | |
