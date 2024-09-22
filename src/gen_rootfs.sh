@@ -439,12 +439,18 @@ function build_grub() {
 }
 
 function install_grub() {
-    pushd 3rdparty/grub >/dev/null
+    pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
         cd build
             make DESTDIR="$PROJ_DIR/rootfs" install
             install -v -m 644 -o root -g root grub.efi "$PROJ_DIR/rootfs/System/lib/grub2/x86_64-efi/"
         cd -
         rm -v -r -f build
+        # compress the man pages
+        pushd "$PROJ_DIR/rootfs/System/share/man" >/dev/null
+            for SECTION in 1 8; do
+                find . -type f -name "grub2*.$SECTION" -exec gzip -v -9 {} \;
+            done
+        popd >/dev/null
         # create default directory in /System/cfg
         install -d -v -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/default"
         # install extra scripts
@@ -479,6 +485,16 @@ function install_efivar() {
              DATADIR="/System/share" \
              INCLUDEDIR="/System/include" install
     popd >/dev/null
+    # compress the man pages
+    pushd "$PROJ_DIR/rootfs/System/share/man" >/dev/null
+        for SECTION in 1 3; do
+            find . -type f -name "efi*.$SECTION" -exec gzip -v -9 {} \;
+        done
+    popd >/dev/null
+    strip -v -s "$PROJ_DIR/rootfs/bin/efisecdb"
+    strip -v -s "$PROJ_DIR/rootfs/bin/efivar"
+    # shellcheck disable=SC2086
+    strip -v -s $PROJ_DIR/rootfs/lib64/libefi*
 }
 
 function build_efibootmgr() {
@@ -486,13 +502,28 @@ function build_efibootmgr() {
         sed -e '/extern int efi_set_verbose/d' -i "src/efibootmgr.c"
         LOADER="grub.efi"  # default loader
         VENDOR="AssimilatorOS"
+        LIBSRCHDIR="$PROJ_DIR/rootfs/System/lib64"
+        HEADERSRCHDIR1="$PROJ_DIR/rootfs/System/include"
+        HEADERSRCHDIR2="$PROJ_DIR/rootfs/System/include/efivar"
         OPT_FLAGS="-O2 -g -m64 -fmessage-length=0 -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables"
-        make -j4 CFLAGS="$OPT_FLAGS -flto -fPIE -pie" OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR"
+        PKG_CONFIG_PATH="$PROJ_DIR/rootfs/System/lib64/pkgconfig/" \
+        make CFLAGS="$OPT_FLAGS -flto -fPIE -pie -L$LIBSRCHDIR -I$HEADERSRCHDIR1 -I$HEADERSRCHDIR2" \
+             CPPFLAGS="-I$HEADERSRCHDIR1 -I$HEADERSRCHDIR2" \
+             OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR" prefix=/System sbindir=/System/sbin
     popd >/dev/null
 }
 
 function install_efibootmgr() {
-    true
+    pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
+        install -v -m 755 -o root -g root src/efibootdump "$PROJ_DIR/rootfs/System/sbin/"
+        install -v -m 755 -o root -g root src/efibootmgr  "$PROJ_DIR/rootfs/System/sbin/"
+        gzip -v -9 src/efibootdump.8
+        gzip -v -9 src/efibootmgr.8
+        install -v -m 644 -o root -g root src/efibootdump.8.gz "$PROJ_DIR/rootfs/System/share/man/man8/"
+        install -v -m 644 -o root -g root src/efibootmgr.8.gz  "$PROJ_DIR/rootfs/System/share/man/man8/"
+        strip -v -s "$PROJ_DIR/rootfs/System/sbin/efibootdump"
+        strip -v -s "$PROJ_DIR/rootfs/System/sbin/efibootmgr"
+    popd >/dev/null
 }
 
 function build_linuxpam() {
@@ -550,7 +581,6 @@ function build_3rdparty() {
     if [[ $BUILD_EFIBOOTMGR == 1 ]]; then
         build_efivar
         install_efivar
-        exit
         build_efibootmgr
         install_efibootmgr
     fi
