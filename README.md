@@ -20,7 +20,7 @@ Currently, Assimilator OS uses the following components for the operating system
 | SQLite3 | 3.46.1 | [Public Domain](https://sqlite.org/copyright.html) | https://sqlite.org/index.html |
 | Rsync | 3.3.0 | [GPLv3](3rdparty/rsync-3.3.0/COPYING) | https://rsync.samba.org/ |
 | PartClone | 0.3.32 | | |
-| GNU Nano Editor | 8.2 | | |
+| GNU Nano Editor | 8.2 | [GPLv3](3rdparty/nano-8.2/COPYING) | https://www.nano-editor.org/ |
 | Dialog | 1.3 | | |
 | XFS Progs | 6.9.0 | | |
 

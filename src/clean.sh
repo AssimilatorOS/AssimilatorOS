@@ -27,6 +27,7 @@ rm -rfv "${PROJ_DIR}/3rdparty/pam/build"     ||:
 rm -rfv "${PROJ_DIR}/3rdparty/jq/build"      ||:
 rm -rfv "${PROJ_DIR}/3rdparty/sqlite3/build" ||:
 rm -rfv "${PROJ_DIR}/3rdparty/rsync/build"   ||:
+rm -rfv "${PROJ_DIR}/3rdparty/nano/build"    ||:
 pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
     rm -rfv __pycache__/
     rm -fv docs/grub2.info
