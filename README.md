@@ -22,6 +22,6 @@ Currently, Assimilator OS uses the following components for the operating system
 | PartClone | 0.3.32 | | |
 | GNU Nano Editor | 8.2 | [GPLv3](3rdparty/nano-8.2/COPYING) | https://www.nano-editor.org/ |
 | Dialog | 1.3 | | |
-| XFS Progs | 6.9.0 | | |
+| XFS Progs | 6.10.1 | [GPLv2](3rdparty/xfsprogs-6.10.1/LICENSES/GPL-2.0) | https://xfs.wiki.kernel.org/ |
 
 Individual 3rd-party components are licensed under their own terms and conditions. This project "vendors" components to ensure that the system is buildable at any time. Periodically, the vendored versions will be replaced with newer versions or replacement libraries and tooling designed for smaller installations.
