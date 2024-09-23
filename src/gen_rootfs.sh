@@ -736,11 +736,34 @@ function install_sqlite3() {
 }
 
 function build_rsync() {
-    true
+    local tool="RSync"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/rsync" >/dev/null
+        mkdir -pv build
+        pushd build >/dev/null
+            ../configure --prefix=/System \
+                         --bindir=/System/bin \
+                         --libdir=/System/lib64 \
+                         --sysconfdir=/System/cfg
+            make -j4
+        popd >/dev/null
+    popd >/dev/null
 }
 
 function install_rsync() {
-    true
+    local tool="RSync"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/rsync" >/dev/null
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" install
+        popd >/dev/null
+        strip -v -s "$PROJ_DIR/rootfs/bin/rsync"
+    popd >/dev/null
+    pushd "$PROJ_DIR/rootfs/System/share/man" >/dev/null
+        for SECTION in 1 5; do
+            find . -type f -name "rsync*.$SECTION" -exec gzip -v -9 {} \;
+        done
+    popd >/dev/null
 }
 
 function build_nano() {
@@ -764,6 +787,14 @@ function build_dialog() {
 }
 
 function install_dialog() {
+    true
+}
+
+function build_partclone() {
+    true
+}
+
+function install_partclone() {
     true
 }
 
@@ -811,27 +842,36 @@ function build_3rdparty() {
         build_sqlite3
         install_sqlite3
     fi
-    exit
 
     # build and install Rsync
-    build_rsync
-    install_rsync
+    if [[ $BUILD_RSYNC == 1 ]]; then
+        build_rsync
+        install_rsync
+    fi
 
     # build and install GNU Nano
-    build_nano
-    install_nano
+    if [[ $BUILD_NANO == 1 ]]; then
+        build_nano
+        install_nano
+    fi
 
     # build and install XFS Programs
-    build_xfsprogs
-    install_xfsprogs
+    if [[ $BUILD_XFSPROGS == 1 ]]; then
+        build_xfsprogs
+        install_xfsprogs
+    fi
 
     # build and install dialog
-    build_dialog
-    install_dialog
+    if [[ $BUILD_DIALOG == 1 ]]; then
+        build_dialog
+        install_dialog
+    fi
 
     # build and install PartClone
-    build_partclone
-    install_partclone
+    if [[ $BUILD_PARTCLONE ]]; then
+        build_partclone
+        install_partclone
+    fi
 }
 
 function build_src() {
@@ -874,13 +914,14 @@ function main() {
 
         # build and install 3rdparty tools
         build_3rdparty
+        exit
 
         # build OUR tools
         build_src
 
         # install libraries
         install_host_libs
-    popd
+    popd >/dev/null
 }
 
 main "$@"
