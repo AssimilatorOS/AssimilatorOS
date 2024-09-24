@@ -857,11 +857,35 @@ function install_xfsprogs() {
 }
 
 function build_dialog() {
-    true
+    local tool="Dialog"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/dialog" >/dev/null
+        mkdir -pv build
+        pushd build >/dev/null
+            ../configure --prefix=/System \
+                         --bindir=/System/bin \
+                         --libdir=/System/lib64 \
+                         --sysconfdir=/System/cfg \
+                         --with-ncursesw
+            make -j4
+        popd >/dev/null
+    popd >/dev/null
 }
 
 function install_dialog() {
-    true
+    local tool="Dialog"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/dialog" >/dev/null
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" install
+        popd >/dev/null
+        strip -v -s "$PROJ_DIR/rootfs/bin/dialog"
+    popd >/dev/null
+    pushd "$PROJ_DIR/rootfs/System/share/man" >/dev/null
+        gzip -v -9 man1/dialog.1
+    popd >/dev/null
+    # we don't want the static library
+    rm -fv "$PROJ_DIR/rootfs/lib64/libdialog.a"
 }
 
 function build_partclone() {
