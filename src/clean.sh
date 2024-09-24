@@ -21,15 +21,16 @@ umount -v /dev/loop0p1 ||:
 umount -v /dev/loop0p2 ||:
 losetup -v -D ||:
 rm -fv "${PROJ_DIR}/vdisk.img" ||:
-rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"  ||:
-rm -rfv "${PROJ_DIR}/3rdparty/grub/build"     ||:
-rm -rfv "${PROJ_DIR}/3rdparty/pam/build"      ||:
-rm -rfv "${PROJ_DIR}/3rdparty/jq/build"       ||:
-rm -rfv "${PROJ_DIR}/3rdparty/sqlite3/build"  ||:
-rm -rfv "${PROJ_DIR}/3rdparty/rsync/build"    ||:
-rm -rfv "${PROJ_DIR}/3rdparty/nano/build"     ||:
+rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"     ||:
+rm -rfv "${PROJ_DIR}/3rdparty/grub/build"        ||:
+rm -rfv "${PROJ_DIR}/3rdparty/pam/build"         ||:
+rm -rfv "${PROJ_DIR}/3rdparty/jq/build"          ||:
+rm -rfv "${PROJ_DIR}/3rdparty/sqlite3/build"     ||:
+rm -rfv "${PROJ_DIR}/3rdparty/rsync/build"       ||:
+rm -rfv "${PROJ_DIR}/3rdparty/nano/build"        ||:
 # needed since XFS progs cannot be built outside of source
 rm -rfv "${PROJ_DIR}/3rdparty/xfsprogs/../build" ||:
+rm -rfv "${PROJ_DIR}/3rdparty/dialog/build"      ||:
 pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
     rm -rfv __pycache__/
     rm -fv docs/grub2.info
