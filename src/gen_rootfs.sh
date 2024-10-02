@@ -938,7 +938,7 @@ function install_ncurses() {
     popd >/dev/null
     # fix links for compressed man pages
     for SECTION in 1 3; do
-        pushd "$PROJ_DIR/rootfs/System/share/man/man1" >/dev/null
+        pushd "$PROJ_DIR/rootfs/System/share/man/man${SECTION}" >/dev/null
             find . -type l | while read -r line; do
                 # shellcheck disable=SC2012
                 f=$(basename "$(ls -l "$line" | awk '{ print $9 }')")
@@ -1101,6 +1101,8 @@ function install_host_libs() {
                 echo "${bold}${white}LIBRARY: ${lib}${normal}"
                 strip -s -v "${lib}"
             fi
+            # enforce permissions
+            chmod -v 755 "${lib}"
         done
     popd >/dev/null
 }
