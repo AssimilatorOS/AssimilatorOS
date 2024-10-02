@@ -20,6 +20,7 @@ export BUILD_LINUXPAM=1
 export BUILD_JQ=1
 export BUILD_SQLITE3=1
 export BUILD_RSYNC=1
+export BUILD_NCURSES=1
 export BUILD_NANO=1
 export BUILD_PARTCLONE=1
 export BUILD_XFSPROGS=1
@@ -39,6 +40,7 @@ function show_help() {
     echo "  --skip-jq           Don't build JQ"
     echo "  --skip-sqlite3      Don't build SQLite3 DB"
     echo "  --skip-rsync        Don't build RSync"
+    echo "  --skip-ncurses      Don't build NCurses"
     echo "  --skip-nano         Don't build GNU Nano editor"
     echo "  --skip-partclone    Don't build the PartClone tools"
     echo "  --skip-xfsprogs     Don't build the XFS programs"
@@ -83,6 +85,7 @@ function process_cmd_flags() {
             '--skip-jq')         BUILD_JQ=0                    && shift && continue ;;
             '--skip-sqlite3')    BUILD_SQLITE3=0               && shift && continue ;;
             '--skip-rsync')      BUILD_RSYNC=0                 && shift && continue ;;
+            '--skip-ncurses')    BUILD_NCURSES=0               && shift && continue ;;
             '--skip-nano')       BUILD_NANO=0                  && shift && continue ;;
             '--skip-partclone')  BUILD_PARTCLONE=0             && shift && continue ;;
             '--skip-xfsprogs')   BUILD_XFSPROGS=0              && shift && continue ;;
@@ -888,6 +891,68 @@ function install_dialog() {
     rm -fv "$PROJ_DIR/rootfs/lib64/libdialog.a"
 }
 
+function build_ncurses() {
+    local tool="NCurses"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/ncurses" >/dev/null
+        # make configure find gawk
+        sed -i s/mawk// configure
+
+        # build tic
+        mkdir -pv build_tic
+        pushd build_tic >/dev/null
+            ../configure
+            make -C include
+            make -C progs tic
+        popd >/dev/null
+        mkdir -pv build
+        pushd build >/dev/null
+            ../configure \
+                --prefix=/System \
+                --libdir=/System/lib64 \
+                --mandir=/System/share/man \
+                --with-manpage-format=normal \
+                --with-shared \
+                --without-normal \
+                --with-cxx-shared \
+                --without-debug \
+                --without-ada \
+                --enable-widec
+            make -j4
+        popd >/dev/null
+    popd >/dev/null
+}
+
+function install_ncurses() {
+    local tool="NCurses"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    pushd "$PROJ_DIR/3rdparty/ncurses" >/dev/null
+        pushd build >/dev/null
+            make DESTDIR="$PROJ_DIR/rootfs" TIC_PATH="${PROJ_DIR}/3rdparty/ncurses/build_tic/progs/tic" install
+        popd >/dev/null
+    popd >/dev/null
+    pushd "$PROJ_DIR/rootfs/System/share/man" >/dev/null
+        for SECTION in 1 1m 3 3x 5 7 8; do
+            find . -type f -name "*.$SECTION" -exec gzip -v -9 {} \;
+        done
+    popd >/dev/null
+    # fix links for compressed man pages
+    for SECTION in 1 3; do
+        pushd "$PROJ_DIR/rootfs/System/share/man/man1" >/dev/null
+            find . -type l | while read -r line; do
+                # shellcheck disable=SC2012
+                f=$(basename "$(ls -l "$line" | awk '{ print $9 }')")
+                # shellcheck disable=SC2012
+                t=$(ls -l "$line" | awk '{ print $11 }')
+                echo "FILE: $f"
+                echo "TARGET: $t"
+                rm "$f"
+                ln -sv "${t}.gz" "$f"
+            done
+        popd
+    done
+}
+
 function build_partclone() {
     true
 }
@@ -959,6 +1024,12 @@ function build_3rdparty() {
         install_xfsprogs
     fi
 
+    # build and install ncurses
+    if [[ $BUILD_NCURSES == 1 ]]; then
+        build_ncurses
+        install_ncurses
+    fi
+
     # build and install dialog
     if [[ $BUILD_DIALOG == 1 ]]; then
         build_dialog
@@ -977,11 +1048,59 @@ function build_src() {
 }
 
 function install_host_libs() {
-    pushd "${PROJ_DIR}/rootfs" >/dev/null
-        for binary in "bin/busybox" "bin/jq"; do
-            ldd $binary | while read -r line; do
-                echo "LINE: $line"
+    pushd "${PROJ_DIR}/rootfs/bin" >/dev/null
+        echo "${bold}${aqua}${SCRIPT_NAME}: Installing system libraries... ${normal}"
+        find . -type f | while read -r line; do
+            f=$(basename "$line")
+            t="$(file -i "$f" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/' | sed 's/-/_/')"
+            if [[ "$t" != 'application_x_executable' ]]; then
+                continue
+            fi
+            ldd "$f" | while read -r lib; do
+                if [[ "$lib" =~ linux-vdso.so.1 ]]; then
+                    continue
+                fi
+                if [[ "$lib" =~ ld-linux-x86-64.so.2 ]]; then
+                    continue
+                fi
+                l=$(echo "$lib" | awk '{ print $1 }')
+                p=$(echo "$lib" | awk '{ print $3 }')
+                # get our target's dir name for later
+                d=$(dirname "$p")
+                if [[ ! -f "$PROJ_DIR/rootfs/lib64/$l" ]]; then
+                    echo "${bold}${aqua}Installing library: ${l}${normal}"
+                    cp -av "$p" "$PROJ_DIR/rootfs/lib64/$l"
+                    # now determine if path is a symlink
+                    lt="$(file -i "$p" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/')"
+                    if [[ "$lt" =~ inode_symlink ]]; then
+                        # get our target to install
+                        # shellcheck disable=SC2012
+                        link_target=$(ls -l "$p" | awk '{ print $11 }')
+                        ltarget_file=$(basename "$link_target")
+                        echo "${bold}${aqua}Installing library: ${ltarget_file}${normal}"
+                        cp -av "$d/$link_target" "$PROJ_DIR/rootfs/lib64/$ltarget_file"
+                    fi
+                fi
             done
+        done
+    popd >/dev/null
+    pushd "${PROJ_DIR}/rootfs/lib64" >/dev/null
+        # now install ld-linux-x86-64.so.2
+        echo "${bold}${aqua}Installing library: ld-linux-x86-64.so.2${normal}"
+        cp -av /lib64/ld-linux-x86-64.so.2 "$PROJ_DIR/rootfs/lib64/"
+        ln -sv ld-linux-x86-64.so.2 ld-lsb-x86-64.so.2
+        ln -sv ld-linux-x86-64.so.2 ld-lsb-x86-64.so.3
+    popd >/dev/null
+    # now strip all the libs
+    pushd "${PROJ_DIR}/rootfs/lib64" >/dev/null
+        echo "${bold}${aqua}stripping libraries${normal}"
+        find . -type f -exec file {} \; | while read -r lib_string; do
+            if [[ "${lib_string}" =~ 'not stripped' ]]; then
+                # get our lib from the string
+                lib=$(basename "$(echo "${lib_string}" | awk '{ print $1 }')" | sed 's/://')
+                echo "${bold}${white}LIBRARY: ${lib}${normal}"
+                strip -s -v "${lib}"
+            fi
         done
     popd >/dev/null
 }
@@ -1011,7 +1130,6 @@ function main() {
 
         # build and install 3rdparty tools
         build_3rdparty
-        exit
 
         # build OUR tools
         build_src
