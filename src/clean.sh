@@ -31,6 +31,8 @@ rm -rfv "${PROJ_DIR}/3rdparty/nano/build"        ||:
 # needed since XFS progs cannot be built outside of source
 rm -rfv "${PROJ_DIR}/3rdparty/xfsprogs/../build" ||:
 rm -rfv "${PROJ_DIR}/3rdparty/dialog/build"      ||:
+rm -rfv "${PROJ_DIR}/3rdparty/ncurses/build_tic" ||:
+rm -rfv "${PROJ_DIR}/3rdparty/ncurses/build"     ||:
 pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
     rm -rfv __pycache__/
     rm -fv docs/grub2.info
@@ -54,6 +56,7 @@ pushd "${PROJ_DIR}" >/dev/null
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
     git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.226/"
+    git checkout -- "$PROJ_DIR/3rdparty/ncurses-6.5/"
 popd >/dev/null
 
 echo "${SCRIPT_NAME}: Clean up complete"
