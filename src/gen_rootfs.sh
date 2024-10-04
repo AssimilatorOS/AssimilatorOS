@@ -775,6 +775,9 @@ function build_nano() {
     pushd "$PROJ_DIR/3rdparty/nano" >/dev/null
         mkdir -pv build
         pushd build >/dev/null
+            LDFLAGS="-L${PROJ_DIR}/rootfs/System/lib64" \
+            CPPFLAGS="-I${PROJ_DIR}/rootfs/System/include/ncursesw -I${PROJ_DIR}/rootfs/System/include" \
+            PKG_CONFIG_PATH="${PROJ_DIR}/rootfs/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/share/pkgconfig" \
             ../configure --prefix=/System \
                          --bindir=/System/bin \
                          --libdir=/System/lib64 \
@@ -865,6 +868,9 @@ function build_dialog() {
     pushd "$PROJ_DIR/3rdparty/dialog" >/dev/null
         mkdir -pv build
         pushd build >/dev/null
+            LDFLAGS="-L${PROJ_DIR}/rootfs/System/lib64" \
+            CPPFLAGS="-I${PROJ_DIR}/rootfs/System/include/ncursesw -I${PROJ_DIR}/rootfs/System/include" \
+            PKG_CONFIG_PATH="${PROJ_DIR}/rootfs/lib64/pkgconfig:/usr/lib64/pkgconfig:/usr/share/pkgconfig" \
             ../configure --prefix=/System \
                          --bindir=/System/bin \
                          --libdir=/System/lib64 \
@@ -917,7 +923,8 @@ function build_ncurses() {
                 --with-cxx-shared \
                 --without-debug \
                 --without-ada \
-                --enable-widec
+                --enable-widec \
+                --enable-pc-files
             make -j4
         popd >/dev/null
     popd >/dev/null
@@ -974,6 +981,12 @@ function build_3rdparty() {
         install_kernel
     fi
 
+    # build and install ncurses
+    if [[ $BUILD_NCURSES == 1 ]]; then
+        build_ncurses
+        install_ncurses
+    fi
+
     # build and install GNU Grub2 bootloader
     if [[ $BUILD_GRUB == 1 ]]; then
         build_grub
@@ -1024,12 +1037,6 @@ function build_3rdparty() {
         install_xfsprogs
     fi
 
-    # build and install ncurses
-    if [[ $BUILD_NCURSES == 1 ]]; then
-        build_ncurses
-        install_ncurses
-    fi
-
     # build and install dialog
     if [[ $BUILD_DIALOG == 1 ]]; then
         build_dialog
@@ -1053,36 +1060,69 @@ function install_host_libs() {
         find . -type f | while read -r line; do
             f=$(basename "$line")
             t="$(file -i "$f" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/' | sed 's/-/_/')"
-            if [[ "$t" != 'application_x_executable' ]]; then
+            if [[ "$t" == 'application_x_executable' ]] || \
+               [[ "$t" == 'application_x_sharedlib' ]]; then
+                ldd "$f" | while read -r lib; do
+                    if [[ "$lib" =~ linux-vdso.so.1 ]]; then
+                        echo "${bold}${white}VDSO is baked into the Kernel. Skipping${normal}"
+                        continue
+                    fi
+                    if [[ "$lib" =~ ld-linux-x86-64.so.2 ]]; then
+                        echo "${bold}${white}ld-linux is handled later. Skipping for now${normal}"
+                        continue
+                    fi
+                    l=$(echo "$lib" | awk '{ print $1 }')
+                    p=$(echo "$lib" | awk '{ print $3 }')
+                    # get our target's dir name for later
+                    d=$(dirname "$p")
+                    if [[ ! -f "$PROJ_DIR/rootfs/lib64/$l" ]]; then
+                        # is $l a valid library?
+                        echo "${bold}${yellow}FILE: $l" >&2
+                        if [[ "$l" =~ ^lib[a-z0-9|_-]+.so* ]]; then
+                            # check if library is already present in tree
+                            if [[ -e "${PROJ_DIR}/rootfs/lib64/$l" ]]; then
+                                echo "${bold}${white}Library already exists inside the image. Skipping${normal}"
+                                continue
+                            fi
+                            echo "${bold}${aqua}Installing library: ${l}${normal}"
+                            cp -av "$p" "$PROJ_DIR/rootfs/lib64/$l"
+                            # now determine if path is a symlink
+                            lt="$(file -i "$p" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/')"
+                            if [[ "$lt" =~ inode_symlink ]]; then
+                                echo "${bold}${white}File is a symlink${normal}"
+                                # get our target to install
+                                # shellcheck disable=SC2012
+                                link_target=$(ls -l "$p" | awk '{ print $11 }')
+                                ltarget_file=$(basename "$link_target")
+                                echo "${bold}${aqua}Installing library: ${ltarget_file}${normal}"
+                                echo "TARGET DIRECTORY: $d"
+                                echo "LINK TARGET: $link_target"
+                                # Gah! There are times that the entry in /lib64 is a LINK to the stupid thing in /usr/lib64.
+                                #      Need to work around this by checking if this link name is identical to the target
+                                #      name, nuke the link, and then copy in the real file.
+                                if [[ "${l}" == "${ltarget_file}" ]]; then
+                                    # nuke the link, then copy file into place
+                                    echo "${bold}${yellow}Found collision!!!${normal}"
+                                    echo "${bold}${white}Removing offending symlink that collids with the target file${normal}"
+                                    rm -v "$PROJ_DIR/rootfs/lib64/$ltarget_file"
+                                    cp -av "$link_target" "${PROJ_DIR}/rootfs/lib64/$ltarget_file"
+                                else
+                                    cp -av "$d/$link_target" "$PROJ_DIR/rootfs/lib64/$ltarget_file"
+                                fi
+                            fi
+                        else
+                            echo "${bold}${yellow}Not a library!${normal}"
+                            continue
+                        fi
+                    fi
+                done
+            else
+                echo "${bold}${white}Not a dynamically linked executable. Skipping${normal}"
                 continue
             fi
-            ldd "$f" | while read -r lib; do
-                if [[ "$lib" =~ linux-vdso.so.1 ]]; then
-                    continue
-                fi
-                if [[ "$lib" =~ ld-linux-x86-64.so.2 ]]; then
-                    continue
-                fi
-                l=$(echo "$lib" | awk '{ print $1 }')
-                p=$(echo "$lib" | awk '{ print $3 }')
-                # get our target's dir name for later
-                d=$(dirname "$p")
-                if [[ ! -f "$PROJ_DIR/rootfs/lib64/$l" ]]; then
-                    echo "${bold}${aqua}Installing library: ${l}${normal}"
-                    cp -av "$p" "$PROJ_DIR/rootfs/lib64/$l"
-                    # now determine if path is a symlink
-                    lt="$(file -i "$p" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/')"
-                    if [[ "$lt" =~ inode_symlink ]]; then
-                        # get our target to install
-                        # shellcheck disable=SC2012
-                        link_target=$(ls -l "$p" | awk '{ print $11 }')
-                        ltarget_file=$(basename "$link_target")
-                        echo "${bold}${aqua}Installing library: ${ltarget_file}${normal}"
-                        cp -av "$d/$link_target" "$PROJ_DIR/rootfs/lib64/$ltarget_file"
-                    fi
-                fi
-            done
         done
+        # special case, libcom_err.so.2.1 isn't being imported into the rootfs correctly.
+        cp -av /usr/lib64/libcom_err.so.2.1 "${PROJ_DIR}/rootfs/lib64/"
     popd >/dev/null
     pushd "${PROJ_DIR}/rootfs/lib64" >/dev/null
         # now install ld-linux-x86-64.so.2
@@ -1101,7 +1141,9 @@ function install_host_libs() {
                 echo "${bold}${white}LIBRARY: ${lib}${normal}"
                 strip -s -v "${lib}"
             fi
-            # enforce permissions
+        done
+        # enforce permissions
+        find . -type f -name "*.so*" | while read -r lib; do
             chmod -v 755 "${lib}"
         done
     popd >/dev/null
