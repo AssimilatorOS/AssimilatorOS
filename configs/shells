@@ -1,0 +1,12 @@
+/bin/ash
+/bin/bash
+/bin/false
+/bin/passwd
+/bin/sh
+/bin/true
+/System/bin/ash
+/System/bin/bash
+/System/bin/false
+/System/bin/passwd
+/System/bin/sh
+/System/bin/true

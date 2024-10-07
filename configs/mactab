@@ -1,0 +1,3 @@
+# /etc/mactab
+#
+# One ethernet interface alias and ethernet hardware address per line is used to assign meaningful names to network interfaces
