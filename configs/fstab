@@ -1,4 +1,25 @@
-LABEL=Assimilator   /       xfs    defaults,usrquota,grpquota               1 1
-tmpfs               /tmp    tmpfs  defaults                                 0 0
-LABEL=EFI           /boot   vfat   iocharset=iso8859-1,codepage=437,utf8    1 2
-/pagefile.sys       swap    swap   defaults                                 0 0
+# normal filesystems
+LABEL=Assimilator   /                       xfs         defaults,usrquota,grpquota                                      1 1
+LABEL=EFI           /boot                   vfat        iocharset=iso8859-1,codepage=437,utf8                           1 2
+
+# tempfs for /tmp
+tmpfs               /System/tmp             tmpfs       defaults                                                        0 0
+
+# swap
+/pagefile.sys       swap                    swap        defaults                                                        0 0
+
+# psuedo filesystems
+devtmpfs            /dev                    devtmpfs    rw,nosuid,mode=755,inode64                                      0 0
+tmpfs               /dev/shm                tmpfs       rw,nosuid,nodev,inode64                                         0 0
+devpts              /dev/pts                devpts      rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000           0 0
+sysfs               /sys                    sysfs       rw,nosuid,nodev,noexec,relatime                                 0 0
+securityfs          /sys/kernel/security    securityfs  rw,nosuid,nodev,noexec,relatime                                 0 0
+cgroup2             /sys/fs/cgroup          cgroup2     rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recuriveprot  0 0
+bpf                 /sys/fs/bpf             bpf         rw,nosuid,nodev,noexec,relatime,mode=700                        0 0
+proc                /proc                   proc        rw,nosuid,nodev,noexec,relatime                                 0 0
+tmpfs               /System/var/run         tmpfs       rw,nosuid,nodev,mode=755,inode64                                0 0
+hugetlbfs           /dev/hugepages          hugetlbfs   rw,nosuid,nodev,relatime,pagesize=2M                            0 0
+debugfs             /sys/kernel/debug       debugfs     rw,nosuid,nodev,noexec,relatime                                 0 0
+tracefs             /sys/kernel/tracing     tracefs     rw,nosuid,nodev,noexec,relatime                                 0 0
+configfs            /sys/kernel/config      configfs    rw,nosuid,nodev,noexec,relatime                                 0 0
+
