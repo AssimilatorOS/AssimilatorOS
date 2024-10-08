@@ -199,7 +199,7 @@ function create_cfg_tree() {
         install -v -d -m 755 -o root -g root svcmgr/services.d
         install -v -d -m 755 -o root -g root opt
         install -v -d -m 755 -o root -g root skel
-        ln -sv ../opt/local/etc local
+        ln -sv /opt/local/etc local
         ln -sv /proc/mounts mtab
     popd >/dev/null
     ln -sv cfg etc
@@ -1180,6 +1180,9 @@ function main() {
 
         # install libraries
         install_host_libs
+
+        # now for configuration files
+        install_configuration_files
     popd >/dev/null
 }
 
