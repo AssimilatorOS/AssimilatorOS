@@ -1,0 +1,81 @@
+# /etc/inittab
+#
+# Note: The init used by Assimilator OS does not support runlevels. The
+# traditional runlevels field is completely ignored.
+#
+# This limitation is dealt with by the svcmgr program that acts as an
+# intermediate layer above /System/bin/init to do the appropriate actions
+# based on the flags and arguments it receives.
+#
+# Format for each entry: <id>:<runlevels>:<action>:<process>
+#
+# id        == tty to run on, or empty for /dev/console
+# runlevels == ignored
+# action    == one of sysinit, wait, once, respawn, askfirst,
+#               shutdown, restart and ctrlaltdel. See notes below.
+# process   == program to run
+#
+# == Order of Operations ==
+#
+# The order of execution by the init daemon in Assimilator OS is as follows:
+#
+# 1. sysinit: tasks with this action are run first, in the order of the lines
+#             present in /System/cfg/inittab. For Assimilator OS, we leverage
+#             a tool designed for the OS called svcmgr and pass to it the
+#             --earlyboot flag to run tasks defined in the
+#             /System/cfg/svcmgr/systemboot.d directory
+#
+# 2. wait:    tasks with this action are run next in the order of the lines
+#             present in /System/cfg/inittab. Again, like before, we leverage
+#             svcmgr to handle service starts. The default flag to svcmgr tells
+#             svcmgr which "runlevel" the host should be at, and by extension
+#             which services to start for that runlevel. See documentation
+#             for svcmgr for more information about how runlevels and services
+#             are defined.
+#
+# 3. once:    tasks with this action are run next. Unlike the sysinit and wait
+#             actions, 'once' actions are not blocking and are run 100% in the
+#             background. Assimilator OS currently does not use this action
+#             type.
+#
+# 4. askfirst & respawn: tasks with either of these two action types are
+#                        started next.
+#    - askfirst:         tasks with the 'askfirst' action cause init to print
+#                        'Please press Enter to activate this console' to the
+#                        terminal before running the program. At present,
+#                        Assimilator OS does not use this action type.
+#    - respawn:          tasks with the 'respawn' action cause init to monitor
+#                        if the program has failed or closed. If so, it will
+#                        restart the program specified. Currently, Assimilator
+#                        OS only uses this for managing the TTY gettys.
+#
+# The 'shutdown' action is triggered when a halt, reboot, or poweroff request
+# is sent to the /dev/initctl named pipe or the SIGQUIT signal is received.
+#
+# The 'restart' action is triggered when the SIGQUIT signal is received. This
+# action will normally respawn /System/bin/init and run the normal post wait
+# and sysinit actions.
+#
+# The 'ctrlaltdel' action is triggered when the special Ctl-Alt-Delete key
+# sequence is pressed.
+
+# Startup the system - right after the pivot_root call from the initrd
+::sysinit:/System/bin/svcmgr --earlyboot
+
+# now start any services
+::wait:/System/bin/svcmgr --default --start-services
+
+# next we need gettys on tty1 through tty6
+tty1::respawn:/System/bin/getty 38400 tty1
+tty2::respawn:/System/bin/getty 38400 tty2
+tty3::respawn:/System/bin/getty 38400 tty3
+tty4::respawn:/System/bin/getty 38400 tty4
+tty5::respawn:/System/bin/getty 38400 tty5
+tty6::respawn:/System/bin/getty 38400 tty6
+
+# Handle ctrlaltdel
+::ctrlaltdel:/System/bin/svcmgr --ctl-alt-delete-action
+
+# Shutdown taaks
+::shutdown:/System/bin/svcmgr --stop-services
+::shutdown:/System/bin/svcmgr --process-mounts
