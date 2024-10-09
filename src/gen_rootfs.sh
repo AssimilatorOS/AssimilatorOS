@@ -300,7 +300,7 @@ function install_configuration_files() {
     # install configuration files
     pushd "$PROJ_DIR/rootfs" >/dev/null
         touch etc/hostname
-        ln -sv etc/hostname etc/HOSTNAME
+        ln -sv hostname etc/HOSTNAME
         touch etc/network/interfaces
         install -v -m 644 -o root -g root ../configs/acpi.map etc/
         install -v -m 644 -o root -g root ../configs/acpid.conf etc/
@@ -347,10 +347,6 @@ function install_configuration_files() {
         install -v -m 644 -o root -g root ../configs/inetd.conf etc/
         install -v -m 644 -o root -g root ../configs/inittab etc/
         install -v -m 644 -o root -g root ../configs/mdev.conf etc/
-
-        # shell configuration
-        install -v -m 644 -o root -g root ../shellcfg/profile etc/
-        install -v -m 644 -o root -g root ../shellcfg/umask.sh etc/profile.d/
     popd >/dev/null
 }
 
