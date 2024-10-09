@@ -25,14 +25,8 @@ tape:x:483:
 video:x:482:
 audit:x:481:
 bin:x:1:daemon
-nscd:x:467:
-ntadmin:x:71:
 sshd:!:466:
 games:x:465:
-at:x:25:
-usbmux:x:464:
 rpc:x:463:
-pesign:x:454:
 www:x:452:wwwrun
 wwwrun:!:451:
-tss:!:98:
