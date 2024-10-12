@@ -10,7 +10,6 @@ Assimilator OS currently is designed to use the following first-party tools for 
 
 | Component | License | Description |
 | --- | --- | --- |
-| mkinitramfs | [GPLv2](LICENSE) | A small tool for creating the initial RAM disk used for various early boot tasks that normally would be handled by `dracut` |
 | svcmgr | [GPLv2](LICENSE) | A replacement service manager that works with the simple init daemon that BusyBox ships. This adds run target support, service dependency management, CGroup and Linux Namespace support, and JSON based service description files |
 | svcctl | [GPLv2](LICENSE) | A small CLI tool for managing the Assimilator OS Service Manager, including requesting start or stop of requested service |
 | initctl | [GPLv2](LICENSE) | A replacement set of tools for managing the simple init daemon in the operating system. This includes a rewrite of the `halt`, `reboot`, and `shutdown` commands as well as the `initctl` tool |
