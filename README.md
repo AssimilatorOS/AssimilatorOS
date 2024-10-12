@@ -4,7 +4,20 @@ This small busybox-based Linux powered operating system is meant to allow preppi
 
 The operating system, through symlinks adheres to the FHS, however, borrows from AltimatOS, in that the operating system root is under `/System` and not the traditional `/usr` heirarchy. Additionally, as the system uses BusyBox for its tools, some additional custom tools have been put together to ease using the system and allowing for other future uses.
 
-## Included Tools
+## Distribution Tools
+
+Assimilator OS currently is designed to use the following first-party tools for certain core OS functions:
+
+| Component | License | Description |
+| --- | --- | --- |
+| mkinitramfs | [GPLv2](LICENSE) | A small tool for creating the initial RAM disk used for various early boot tasks that normally would be handled by `dracut` |
+| svcmgr | [GPLv2](LICENSE) | A replacement service manager that works with the simple init daemon that BusyBox ships. This adds run target support, service dependency management, CGroup and Linux Namespace support, and JSON based service description files |
+| svcctl | [GPLv2](LICENSE) | A small CLI tool for managing the Assimilator OS Service Manager, including requesting start or stop of requested service |
+| initctl | [GPLv2](LICENSE) | A replacement set of tools for managing the simple init daemon in the operating system. This includes a rewrite of the `halt`, `reboot`, and `shutdown` commands as well as the `initctl` tool |
+
+Most of these tools are written in Golang. All of them are licensed under the GNU Public License, version 2.
+
+## Included 3rd-Party Tools
 
 Currently, Assimilator OS uses the following components for the operating system:
 
@@ -19,7 +32,6 @@ Currently, Assimilator OS uses the following components for the operating system
 | JQ | 1.7.1 | [CC-BY-3.0/MIT](3rdparty/jq-1.7.1/COPYING) | https://jqlang.github.io/jq/ |
 | SQLite3 | 3.46.1 | [Public Domain](https://sqlite.org/copyright.html) | https://sqlite.org/index.html |
 | Rsync | 3.3.0 | [GPLv3](3rdparty/rsync-3.3.0/COPYING) | https://rsync.samba.org/ |
-| PartClone | 0.3.32 | | |
 | GNU Nano Editor | 8.2 | [GPLv3](3rdparty/nano-8.2/COPYING) | https://www.nano-editor.org/ |
 | NCurses | 6.5 | [MIT](3rdparty/ncurses-6.5/COPYING) | https://invisible-island.net/ncurses/ |
 | Dialog | 1.3 | [LGPLv2.1](3rdparty/dialog-1.3-20240619/COPYING) | https://invisible-island.net/dialog/ |
