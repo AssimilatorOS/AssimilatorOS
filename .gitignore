@@ -17,3 +17,8 @@ rootfs
 
 # kate swap files
 *.kate-swp
+
+# build directories should not be tracked
+3rdparty/build
+3rdparty/*/build
+3rdparty/*/build_tic
