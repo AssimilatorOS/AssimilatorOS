@@ -431,7 +431,7 @@ function install_kernel() {
     pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         cd build
         make INSTALL_PATH=../../../rootfs/System/boot install ||:
-        make INSTALL_MOD_PATH=../../../rootfs/System/lib/modules modules_install ||:
+        make INSTALL_MOD_PATH=../../../rootfs/System modules_install ||:
         cd -
         # clean up after ourselves
         rm -v -r -f build
