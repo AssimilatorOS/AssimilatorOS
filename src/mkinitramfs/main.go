@@ -126,13 +126,18 @@ func processFlags(kRelease string, defKModDir string, config config.Config ) (co
 
 func setDefaultModules(config *config.Config) {
 	config.Modules = []string{
-		"busybox",
-		"busybox-init",
-		"kernel-modules",
-		"mdev",
-		"mdev-rules",
-		"fs",
-		"compression",
+		"00earlyfw",
+		"01base",
+		"02busybox",
+		"03busybox-init",
+		"04firmware",
+		"05fs",
+		"06kernel-modules",
+		"07mdev",
+		"08mdev-rules",
+		"09rootfs",
+		"10pivot",
+		"11compression",
 	}
 }
 
