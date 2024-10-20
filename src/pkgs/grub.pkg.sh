@@ -3,7 +3,7 @@ set -u
 set -o pipefail
 
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
-PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")"
+PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
 source "$PROJ_DIR/src/termcolors.shlib"
 
