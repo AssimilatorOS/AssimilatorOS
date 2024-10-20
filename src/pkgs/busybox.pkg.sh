@@ -51,5 +51,5 @@ function clean_busybox() {
     local tool="BusyBox"
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"
-    git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
+    git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
 }
