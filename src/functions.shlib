@@ -322,6 +322,12 @@ function build_3rdparty() {
         clean_kernel
     fi
 
+    if [[ $BUILD_INTEL_FW == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/intel-ucode.pkg.sh"
+        # these are binary, so no build sources or anything to clean
+        install_intel_fw
+    fi
+
     # build and install ncurses
     if [[ $BUILD_NCURSES == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/ncurses.pkg.sh"
