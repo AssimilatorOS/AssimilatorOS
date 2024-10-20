@@ -1,0 +1,516 @@
+#!/bin/bash
+
+set -e
+set -u
+set -o pipefail
+
+SCRIPT_NAME="$(basename "$0")"
+
+SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
+PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")"
+
+source "$PROJ_DIR/src/termcolors.shlib"
+
+IGNORE_IMAGE_FILE=${IGNORE_IMAGE_FILE:-0}
+BUILD_BUSYBOX=${BUILD_BUSYBOX:-1}
+BUILD_KERNEL=${BUILD_KERNEL:-1}
+BUILD_GRUB=${BUILD_GRUB:-1}
+BUILD_EFIBOOTMGR=${BUILD_EFIBOOTMGR:-1}
+BUILD_LINUXPAM=${BUILD_LINUXPAM:-1}
+BUILD_JQ=${BUILD_JQ:-1}
+BUILD_SQLITE3=${BUILD_SQLITE3:-1}
+BUILD_RSYNC=${BUILD_RSYNC:-1}
+BUILD_NCURSES=${BUILD_NCURSES:-1}
+BUILD_NANO=${BUILD_NANO:-1}
+BUILD_PARTCLONE=${BUILD_PARTCLONE:-1}
+BUILD_STATIC_BUSYBOX=${BUILD_STATIC_BUSYBOX:-1}
+BUILD_XFSPROGS=${BUILD_XFSPROGS:-1}
+BUILD_DIALOG=${BUILD_DIALOG:-1}
+
+function root_chk() {
+    if [[ "${EUID}" -ne 0 ]]; then
+        echo "${SCRIPT_NAME}: Please run as root. Exiting" >&2
+        exit 13
+    else
+        echo -e "${SCRIPT_NAME}: Running with elevated privileges\n" >&2
+    fi
+}
+
+function check_tools() {
+    echo "${SCRIPT_NAME}: Testing if tools are installed" >&2
+    echo "${SCRIPT_NAME}: Test for JQ"
+    if ! command -v jq >/dev/null;       then echo "JQ not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for QEMU image tool" >&2
+    if ! command -v qemu-img >/dev/null; then echo "QEMU image tool not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for Util Linux losetup" >&2
+    if ! command -v losetup >/dev/null;  then echo "Util-Linux tools not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for Util Linux Scripted FDisk" >&2
+    if ! command -v sfdisk >/dev/null;   then echo "Util-Linux tools not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for XFS mkfs.xfs tool" >&2
+    if ! command -v mkfs.xfs >/dev/null; then echo "XFS Filesystem tools not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: Test for ManDoc tool" >&2
+    if ! command -v mandoc >/dev/null;   then echo "ManDoc not installed" >&2 && exit 2; fi
+    echo "${SCRIPT_NAME}: All needed tools are present" >&2
+}
+
+function create_vdisk() {
+    if [[ $IGNORE_IMAGE_FILE -ne 1 ]]; then
+        echo "${SCRIPT_NAME}: Creating loopback filesystem"
+        if [[ ! -f vdisk.img ]]; then
+            qemu-img create vdisk.img 4G
+        else
+            echo "${SCRIPT_NAME}: File already exists! Exiting"
+            exit 17
+        fi
+        # create temp loop dev
+        losetup /dev/loop0 "$PROJ_DIR/vdisk.img"
+        # partition device
+        sfdisk /dev/loop0 < "$PROJ_DIR/vdisk.sfdisk"
+        sleep 5
+        partprobe -s
+        losetup -v -D /dev/loop0
+        losetup -v -P /dev/loop0 "$PROJ_DIR/vdisk.img"
+        sleep 1
+        # format ESP
+        mkfs.vfat -v -n ESP -F 32 /dev/loop0p1
+        fatlabel /dev/loop0p1 ESP
+        sleep 1
+        # format the root volume
+        mkfs.xfs /dev/loop0p2
+        xfs_admin -L Assimilator /dev/loop0p2
+        sleep 1
+        lsblk --fs
+    else
+        echo "${SCRIPT_NAME}: Using existing image"
+    fi
+}
+
+function mount_image() {
+    if [[ $IGNORE_IMAGE_FILE -ne 1 ]]; then
+        mount -v -t xfs -L Assimilator "$PROJ_DIR/rootfs"
+        # create mount point for ESP
+        install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/boot"
+        # mount ESP
+        mount -v -t vfat -L ESP "$PROJ_DIR/rootfs/System/boot"
+    else
+        echo "${SCRIPT_NAME}: Image is already mounted. Skipping"
+    fi
+}
+
+function create_opt_local_tree() {
+    pushd opt/local >/dev/null
+        install -v -d -m 755 -o root -g root bin
+        install -v -d -m 755 -o root -g root etc
+        install -v -d -m 755 -o root -g root sbin
+        install -v -d -m 755 -o root -g root lib
+        install -v -d -m 755 -o root -g root lib64
+        install -v -d -m 755 -o root -g root share
+        install -v -d -m 755 -o root -g root var
+    popd >/dev/null
+}
+
+function create_cfg_tree() {
+    install -v -d -m 755 -o root -g root cfg
+    pushd cfg >/dev/null
+        install -v -d -m 755 -o root -g root cron.d
+        install -v -d -m 755 -o root -g root cron.daily
+        install -v -d -m 755 -o root -g root cron.hourly
+        install -v -d -m 755 -o root -g root cron.monthly
+        install -v -d -m 755 -o root -g root cron.weekly
+        install -v -d -m 755 -o root -g root iproute2
+        install -v -d -m 755 -o root -g root modprobe.d
+        install -v -d -m 755 -o root -g root network
+        install -v -d -m 755 -o root -g root network/if-down.d
+        install -v -d -m 755 -o root -g root network/if-post-down.d
+        install -v -d -m 755 -o root -g root network/if-pre-up.d
+        install -v -d -m 755 -o root -g root network/if-up.d
+        install -v -d -m 755 -o root -g root profile.d
+        install -v -d -m 755 -o root -g root svcmgr/services.d
+        install -v -d -m 755 -o root -g root opt
+        install -v -d -m 755 -o root -g root skel
+        ln -sv /opt/local/etc local
+        ln -sv /proc/mounts mtab
+    popd >/dev/null
+    ln -sv cfg etc
+}
+
+function create_man_tree() {
+    install -v -d -m 755 -o root -g root man
+    pushd man >/dev/null
+        install -v -d -m 755 -o root -g root man1
+        install -v -d -m 755 -o root -g root man2
+        install -v -d -m 755 -o root -g root man3
+        install -v -d -m 755 -o root -g root man4
+        install -v -d -m 755 -o root -g root man5
+        install -v -d -m 755 -o root -g root man6
+        install -v -d -m 755 -o root -g root man7
+        install -v -d -m 755 -o root -g root man8
+    popd >/dev/null
+}
+
+function create_share_tree() {
+    install -v -d -m 755 -o root -g root share
+    pushd share >/dev/null
+        install -v -d -m 755 -o root -g root doc
+        install -v -d -m 755 -o root -g root info
+        install -v -d -m 755 -o root -g root locale
+        create_man_tree
+        install -v -d -m 755 -o root -g root misc
+        install -v -d -m 755 -o root -g root nls
+        install -v -d -m 755 -o root -g root terminfo
+        install -v -d -m 755 -o root -g root zoneinfo
+    popd >/dev/null
+}
+
+function create_var_tree() {
+    install -v -d -m 755 -o root -g root var
+    pushd var >/dev/null
+        install -v -d -m 755 -o root -g root adm
+        install -v -d -m 755 -o root -g root cache
+        install -v -d -m 755 -o root -g root crash
+        install -v -d -m 755 -o root -g root lib
+        install -v -d -m 755 -o root -g root lib/empty
+        install -v -d -m 755 -o root -g root lib/hwclock
+        install -v -d -m 755 -o root -g root lib/misc
+        ln -sv ../../opt/local/var local
+        ln -sv ../../opt opt
+        install -v -d -m 755 -o root -g root log
+        install -v -d -m 755 -o root -g root run
+        install -v -d -m 755 -o root -g root run/lock
+        ln -sv run/lock lock
+        install -v -d -m 755 -o root -g root spool
+        install -v -d -m 700 -o root -g root spool/cron
+        pushd spool/cron >/dev/null
+            install -v -d -m 700 -o root -g root lastrun
+            install -v -d -m 700 -o root -g root tabs
+            # compatibility link
+            ln -sv tabs crontabs
+        popd >/dev/null
+        install -v -d -m 1777 -o root -g root spool/mail
+        ln -sv spool/mail mail
+        install -v -d -m 1777 -o root -g root tmp
+    popd >/dev/null
+}
+
+function create_system_tree() {
+    pushd System >/dev/null
+        install -v -d -m 755 -o root -g root bin
+        ln -sv bin sbin
+        install -v -d -m 755 -o root -g root boot/EFI/Boot
+        create_cfg_tree
+        install -v -d -m 755 -o root -g root lib
+        install -v -d -m 755 -o root -g root lib/firmware
+        install -v -d -m 755 -o root -g root lib/modules
+        install -v -d -m 755 -o root -g root lib/security
+        install -v -d -m 755 -o root -g root lib64
+        install -v -d -m 755 -o root -g root lib64/security
+        ln -sv ../opt/local local
+        create_share_tree
+        install -v -d -m 1777 -o root -g root tmp
+        create_var_tree
+    popd >/dev/null
+}
+
+function create_symlinks() {
+    ln -sv System/bin bin
+    ln -sv System/boot boot
+    ln -sv System/cfg etc
+    ln -sv Users home
+    ln -sv System/lib lib
+    ln -sv System/lib64 lib64
+    ln -sv System/var/run run
+    ln -sv System/bin sbin
+    ln -sv System/tmp tmp
+    ln -sv System usr
+    ln -sv System/var var
+}
+
+function install_configuration_files() {
+    # install configuration files
+    pushd "$PROJ_DIR/rootfs" >/dev/null
+        touch etc/hostname
+        ln -sv hostname etc/HOSTNAME
+        touch etc/network/interfaces
+        install -v -m 644 -o root -g root ../configs/acpi.map etc/
+        install -v -m 644 -o root -g root ../configs/acpid.conf etc/
+        install -v -m 600 -o root -g root ../configs/cron.deny etc/
+        install -v -m 644 -o root -g root ../configs/ethers etc/
+        install -v -m 644 -o root -g root ../configs/ethertypes etc/
+        install -v -m 644 -o root -g root ../configs/exports etc/
+        install -v -m 644 -o root -g root ../configs/filesystems etc/
+        install -v -m 644 -o root -g root ../configs/fstab etc/
+        install -v -m 644 -o root -g root ../configs/group etc/
+        install -v -m 644 -o root -g root ../configs/hosts etc/
+        install -v -m 644 -o root -g root ../configs/hosts.allow etc/
+        install -v -m 644 -o root -g root ../configs/hosts.deny etc/
+        install -v -m 644 -o root -g root ../configs/host.conf etc/
+        install -v -m 644 -o root -g root ../configs/httpd.conf etc/
+        install -v -m 644 -o root -g root ../configs/inputrc etc/
+        install -v -m 644 -o root -g root ../configs/issue etc/
+        install -v -m 644 -o root -g root ../configs/issue.net etc/
+        install -v -m 644 -o root -g root ../configs/ld.so.conf etc/
+        install -v -m 644 -o root -g root ../configs/login.defs etc/
+        install -v -m 644 -o root -g root ../configs/mactab etc/
+        install -v -m 644 -o root -g root ../configs/man.conf etc/
+        install -v -m 644 -o root -g root ../configs/motd etc/
+        install -v -m 644 -o root -g root ../configs/netconfig etc/
+        install -v -m 644 -o root -g root ../configs/netgroup etc/
+        install -v -m 644 -o root -g root ../configs/networks etc/
+        install -v -m 644 -o root -g root ../configs/nsswitch.conf etc/
+        install -v -m 644 -o root -g root ../configs/ntp.conf etc/
+        install -v -m 644 -o root -g root ../configs/passwd etc/
+        install -v -m 644 -o root -g root ../configs/protocols etc/
+        install -v -m 644 -o root -g root ../configs/resolv.conf etc/
+        install -v -m 644 -o root -g root ../configs/rpc etc/
+        install -v -m 644 -o root -g root ../configs/securetty etc/
+        install -v -m 644 -o root -g root ../configs/services etc/
+        install -v -m 600 -o root -g root ../configs/shadow etc/
+        install -v -m 644 -o root -g root ../configs/shells etc/
+        install -v -m 644 -o root -g root ../configs/sysctl.conf etc/
+        install -v -m 644 -o root -g root ../configs/syslog.conf etc/
+        install -v -m 644 -o root -g root ../configs/assimilatoros-release etc/
+        pushd System/cfg >/dev/null
+            ln -sv assimilatoros-release os-release
+        popd >/dev/null
+        install -v -m 644 -o root -g root ../configs/dnsd.conf etc/
+        install -v -m 644 -o root -g root ../configs/inetd.conf etc/
+        install -v -m 644 -o root -g root ../configs/inittab etc/
+        install -v -m 644 -o root -g root ../configs/mdev.conf etc/
+    popd >/dev/null
+}
+
+function create_dir_tree() {
+    pushd "$PROJ_DIR/rootfs" >/dev/null
+        install -v -d -m 755 -o root -g root dev
+        install -v -d -m 755 -o root -g root opt
+        install -v -d -m 755 -o root -g root opt/local
+        install -v -d -m 755 -o root -g root proc
+        install -v -d -m 755 -o root -g root selinux
+        install -v -d -m 755 -o root -g root sys
+        install -v -d -m 755 -o root -g root Users
+        install -v -d -m 755 -o root -g root Volumes
+        create_opt_local_tree
+        create_system_tree
+        create_symlinks
+        pushd Users >/dev/null
+            install -v -d -m 700 -o root -g root root
+        popd >/dev/null
+    popd >/dev/null
+}
+
+function build_3rdparty() {
+    # build and install busybox
+    if [[ $BUILD_BUSYBOX == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/busybox.pkg.sh"
+        build_busybox
+        install_busybox
+        clean_busybox
+    fi
+
+    if [[ $BUILD_BUSYBOX_STATIC == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/static-busybox.pkg.sh"
+        build_static_busybox
+        install_static_busybox
+        clean_static_busybox
+    fi
+
+    # build and install kernel
+    if [[ $BUILD_KERNEL == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/linux-kernel.pkg.sh"
+        build_kernel
+        install_kernel
+        clean_kernel
+    fi
+
+    # build and install ncurses
+    if [[ $BUILD_NCURSES == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/ncurses.pkg.sh"
+        build_ncurses
+        install_ncurses
+        clean_ncurses
+    fi
+
+    # build and install GNU Grub2 bootloader
+    if [[ $BUILD_GRUB == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/grub.pkg.sh"
+        build_grub
+        install_grub
+        clean_grub
+    fi
+
+    # efibootmgr needs a new enough version of efivar
+    if [[ $BUILD_EFIBOOTMGR == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/efivar.pkg.sh"
+        build_efivar
+        install_efivar
+        clean_efivar
+
+        source "$PROJ_DIR/src/pkgs/efibootmgr.pkg.sh"
+        build_efibootmgr
+        install_efibootmgr
+        clean_efibootmgr
+    fi
+
+    # build Linux PAM
+    if [[ $BUILD_LINUXPAM == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/linux-pam.pkg.sh"
+        build_linuxpam
+        install_linuxpam
+        clean_linuxpam
+    fi
+
+    # build and install JQ
+    if [[ $BUILD_JQ == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/jq.pkg.sh"
+        build_jq
+        install_jq
+        clean_jq
+    fi
+
+    # build and install SQLite3
+    if [[ $BUILD_SQLITE3 == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/sqlite3.pkg.sh"
+        build_sqlite3
+        install_sqlite3
+        clean_sqlite3
+    fi
+
+    # build and install Rsync
+    if [[ $BUILD_RSYNC == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/rsync.pkg.sh"
+        build_rsync
+        install_rsync
+        clean_rsync
+    fi
+
+    # build and install GNU Nano
+    if [[ $BUILD_NANO == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/nano.pkg.sh"
+        build_nano
+        install_nano
+        clean_nano
+    fi
+
+    # build and install XFS Programs
+    if [[ $BUILD_XFSPROGS == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/xfsprogs.pkg.sh"
+        build_xfsprogs
+        install_xfsprogs
+        clean_xfsprogs
+    fi
+
+    # build and install dialog
+    if [[ $BUILD_DIALOG == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/dialog.pkg.sh"
+        build_dialog
+        install_dialog
+        clean_dialog
+    fi
+
+    # build and install PartClone
+    if [[ $BUILD_PARTCLONE ]]; then
+        source "$PROJ_DIR/src/pkgs/partclone.pkg.sh"
+        build_partclone
+        install_partclone
+        clean_partclone
+    fi
+}
+
+function build_src() {
+    true
+}
+
+function install_host_libs() {
+    pushd "${PROJ_DIR}/rootfs/bin" >/dev/null
+        echo "${bold}${aqua}${SCRIPT_NAME}: Installing system libraries... ${normal}"
+        find . -type f | while read -r line; do
+            f=$(basename "$line")
+            t="$(file -i "$f" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/' | sed 's/-/_/')"
+            if [[ "$t" == 'application_x_executable' ]] || \
+               [[ "$t" == 'application_x_sharedlib' ]]; then
+                ldd "$f" | while read -r lib; do
+                    if [[ "$lib" =~ linux-vdso.so.1 ]]; then
+                        echo "${bold}${white}VDSO is baked into the Kernel. Skipping${normal}"
+                        continue
+                    fi
+                    if [[ "$lib" =~ ld-linux-x86-64.so.2 ]]; then
+                        echo "${bold}${white}ld-linux is handled later. Skipping for now${normal}"
+                        continue
+                    fi
+                    l=$(echo "$lib" | awk '{ print $1 }')
+                    p=$(echo "$lib" | awk '{ print $3 }')
+                    # get our target's dir name for later
+                    d=$(dirname "$p")
+                    if [[ ! -f "$PROJ_DIR/rootfs/lib64/$l" ]]; then
+                        # is $l a valid library?
+                        echo "${bold}${yellow}FILE: $l" >&2
+                        if [[ "$l" =~ ^lib[a-z0-9|_-]+.so* ]]; then
+                            # check if library is already present in tree
+                            if [[ -e "${PROJ_DIR}/rootfs/lib64/$l" ]]; then
+                                echo "${bold}${white}Library already exists inside the image. Skipping${normal}"
+                                continue
+                            fi
+                            echo "${bold}${aqua}Installing library: ${l}${normal}"
+                            cp -av "$p" "$PROJ_DIR/rootfs/lib64/$l"
+                            # now determine if path is a symlink
+                            lt="$(file -i "$p" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/')"
+                            if [[ "$lt" =~ inode_symlink ]]; then
+                                echo "${bold}${white}File is a symlink${normal}"
+                                # get our target to install
+                                # shellcheck disable=SC2012
+                                link_target=$(ls -l "$p" | awk '{ print $11 }')
+                                ltarget_file=$(basename "$link_target")
+                                echo "${bold}${aqua}Installing library: ${ltarget_file}${normal}"
+                                echo "TARGET DIRECTORY: $d"
+                                echo "LINK TARGET: $link_target"
+                                # Gah! There are times that the entry in /lib64 is a LINK to the stupid thing in /usr/lib64.
+                                #      Need to work around this by checking if this link name is identical to the target
+                                #      name, nuke the link, and then copy in the real file.
+                                if [[ "${l}" == "${ltarget_file}" ]]; then
+                                    # nuke the link, then copy file into place
+                                    echo "${bold}${yellow}Found collision!!!${normal}"
+                                    echo "${bold}${white}Removing offending symlink that collids with the target file${normal}"
+                                    rm -v "$PROJ_DIR/rootfs/lib64/$ltarget_file"
+                                    cp -av "$link_target" "${PROJ_DIR}/rootfs/lib64/$ltarget_file"
+                                else
+                                    cp -av "$d/$link_target" "$PROJ_DIR/rootfs/lib64/$ltarget_file"
+                                fi
+                            fi
+                        else
+                            echo "${bold}${yellow}Not a library!${normal}"
+                            continue
+                        fi
+                    fi
+                done
+            else
+                echo "${bold}${white}Not a dynamically linked executable. Skipping${normal}"
+                continue
+            fi
+        done
+        # special case, libcom_err.so.2.1 isn't being imported into the rootfs correctly.
+        cp -av /usr/lib64/libcom_err.so.2.1 "${PROJ_DIR}/rootfs/lib64/"
+    popd >/dev/null
+    pushd "${PROJ_DIR}/rootfs/lib64" >/dev/null
+        # now install ld-linux-x86-64.so.2
+        echo "${bold}${aqua}Installing library: ld-linux-x86-64.so.2${normal}"
+        cp -av /lib64/ld-linux-x86-64.so.2 "$PROJ_DIR/rootfs/lib64/"
+        ln -sv ld-linux-x86-64.so.2 ld-lsb-x86-64.so.2
+        ln -sv ld-linux-x86-64.so.2 ld-lsb-x86-64.so.3
+    popd >/dev/null
+    # now strip all the libs
+    pushd "${PROJ_DIR}/rootfs/lib64" >/dev/null
+        echo "${bold}${aqua}stripping libraries${normal}"
+        find . -type f -exec file {} \; | while read -r lib_string; do
+            if [[ "${lib_string}" =~ 'not stripped' ]]; then
+                # get our lib from the string
+                lib=$(basename "$(echo "${lib_string}" | awk '{ print $1 }')" | sed 's/://')
+                echo "${bold}${white}LIBRARY: ${lib}${normal}"
+                strip -s -v "${lib}"
+            fi
+        done
+        # enforce permissions
+        find . -type f -name "*.so*" | while read -r lib; do
+            chmod -v 755 "${lib}"
+        done
+    popd >/dev/null
+}
