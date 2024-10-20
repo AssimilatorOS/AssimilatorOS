@@ -307,7 +307,7 @@ function build_3rdparty() {
         clean_busybox
     fi
 
-    if [[ $BUILD_BUSYBOX_STATIC == 1 ]]; then
+    if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/static-busybox.pkg.sh"
         build_static_busybox
         install_static_busybox

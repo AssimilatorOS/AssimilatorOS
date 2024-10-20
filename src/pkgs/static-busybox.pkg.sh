@@ -23,6 +23,7 @@ function install_static_busybox() {
     local tool="BusyBox Static"
     echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
+        install -v -m 4755 -o root -g root busybox "$PROJ_DIR/rootfs/System/bin/busybox-static"
         # the static version of busybox is for use in the initramfs, so don't install extra stuff
         make mrproper
         rm -v -f docs/BusyBox.html
