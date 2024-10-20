@@ -23,11 +23,12 @@ Currently, Assimilator OS uses the following components for the operating system
 
 | Component | Version | License | URL |
 | --- | --- | --- | --- |
-| BusyBox | 1.36.1 | [GPLv2](3rdparty/busybox-1.36.1/LICENSE) | https://www.busybox.net/ |
+| BusyBox | 1.36.1 | [GPLv2](3rdparty/busybox-1.37.0/LICENSE) | https://www.busybox.net/ |
 | Linux Kernel | 5.10.226 (LTS) | [GPLv2](3rdparty/linux-5.10.226/COPYING) | https://www.kernel.org/ |
 | GNU Grub | 2.12 | [GPLv3](3rdparty/grub-2.12) | https://www.gnu.org/software/grub/ |
 | EFI Variables library | 39 | [LGPLv2.1](3rdparty/efivar-39/COPYING) | https://github.com/rhboot/efivar |
 | EFI Boot Manager | 18 | [GPLv2](3rdparty/efibootmgr-18/COPYING) | https://github.com/rhboot/efibootmgr |
+| Intel Processor Microcode | 20240910 | [Proprietary](3rdparty/Intel-Linux-Processor-Microcode-Data-Files-microcode-20240910/license) | https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files |
 | Linux PAM | 1.6.1 | [GPLv2/BSD-3 Clause](3rdparty/Linux-PAM-1.6.1/COPYING) | https://github.com/linux-pam/linux-pam |
 | JQ | 1.7.1 | [CC-BY-3.0/MIT](3rdparty/jq-1.7.1/COPYING) | https://jqlang.github.io/jq/ |
 | SQLite3 | 3.46.1 | [Public Domain](https://sqlite.org/copyright.html) | https://sqlite.org/index.html |
