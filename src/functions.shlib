@@ -26,6 +26,7 @@ BUILD_PARTCLONE=${BUILD_PARTCLONE:-1}
 BUILD_STATIC_BUSYBOX=${BUILD_STATIC_BUSYBOX:-1}
 BUILD_XFSPROGS=${BUILD_XFSPROGS:-1}
 BUILD_DIALOG=${BUILD_DIALOG:-1}
+BUILD_INTEL_FW=${BUILD_INTEL_FW:-1}
 
 function root_chk() {
     if [[ "${EUID}" -ne 0 ]]; then
@@ -431,6 +432,10 @@ function install_host_libs() {
         echo "${bold}${aqua}${SCRIPT_NAME}: Installing system libraries... ${normal}"
         find . -type f | while read -r line; do
             f=$(basename "$line")
+            if [[ "$f" == "busybox-static" ]]; then
+                echo "${bold}${white}Skipping Busybox Static binary${normal}"
+                continue
+            fi
             t="$(file -i "$f" | awk '{ print $2 }' | sed 's/;//' | sed 's/\//_/' | sed 's/-/_/')"
             if [[ "$t" == 'application_x_executable' ]] || \
                [[ "$t" == 'application_x_sharedlib' ]]; then

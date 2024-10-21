@@ -43,9 +43,11 @@ function install_efibootmgr() {
 function clean_efibootmgr() {
     local tool="EFI Boot Manager"
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
-    LOADER="grub.efi"  # default loader
-    VENDOR="AssimilatorOS"
-    make OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR" clean
-    # remove extra stuff from compressing man pages
-    rm -vf src/*.8.gz
+    pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
+        LOADER="grub.efi"  # default loader
+        VENDOR="AssimilatorOS"
+        make OS_VENDOR="$VENDOR" EFI_LOADER="$LOADER" EFIDIR="$VENDOR" clean
+        # remove extra stuff from compressing man pages
+        rm -vf src/*.8.gz
+    popd >/dev/null
 }

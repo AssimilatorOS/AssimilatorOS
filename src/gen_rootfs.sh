@@ -27,6 +27,7 @@ export BUILD_PARTCLONE=1
 export BUILD_STATIC_BUSYBOX=1
 export BUILD_XFSPROGS=1
 export BUILD_DIALOG=1
+export BUILD_INTEL_FW=1
 
 function show_help() {
     echo "${SCRIPT_NAME} - Generate an Assimilator OS root filesystem"

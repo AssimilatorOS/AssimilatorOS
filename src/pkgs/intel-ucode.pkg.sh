@@ -16,4 +16,5 @@ function install_intel_fw() {
     fi
     # copy the firmware into place
     cp -av "$PROJ_DIR/3rdparty/Intel-ucode/intel-ucode" "$PROJ_DIR/rootfs/lib/firmware/"
+    chown -R root:root "$PROJ_DIR/rootfs/lib/firmware"
 }

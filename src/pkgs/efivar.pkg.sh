@@ -40,5 +40,7 @@ function install_efivar() {
 function clean_efivar() {
     local tool="EFI Var tools"
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
-    make clean
+    pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
+        make clean
+    popd >/dev/null
 }

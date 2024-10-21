@@ -61,7 +61,7 @@ function install_xfsprogs() {
     popd >/dev/null
 }
 
-function clean_rsync() {
+function clean_xfsprogs() {
     local tool="XFS Programs"
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/xfsprogs/../build"
