@@ -13,7 +13,7 @@ function build_xfsprogs() {
     pushd "$PROJ_DIR/3rdparty/xfsprogs" >/dev/null
         # XFS progs REALLY doesn't know how to do out-of-source builds, so copy tree into temp dir
         mkdir -pv ../build
-        cp -a ./* ../build/
+        cp -av ./* ../build/
         pushd ../build >/dev/null
             export OPTIMIZER="-fPIC"
             export DEBUG=-DNDEBUG
