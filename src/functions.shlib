@@ -27,6 +27,7 @@ BUILD_STATIC_BUSYBOX=${BUILD_STATIC_BUSYBOX:-1}
 BUILD_XFSPROGS=${BUILD_XFSPROGS:-1}
 BUILD_DIALOG=${BUILD_DIALOG:-1}
 BUILD_INTEL_FW=${BUILD_INTEL_FW:-1}
+BUILD_AMD_FW=${BUILD_AMD_FW:-1}
 
 function root_chk() {
     if [[ "${EUID}" -ne 0 ]]; then
@@ -327,6 +328,12 @@ function build_3rdparty() {
         source "$PROJ_DIR/src/pkgs/intel-ucode.pkg.sh"
         # these are binary, so no build sources or anything to clean
         install_intel_fw
+    fi
+
+    if [[ $BUILD_AMD_FW == 1 ]]; then
+        source "$PROJ_DIR/src/pkgs/amd-ucode.pkg.sh"
+        # like the Intel microcode, these are binary, so only install
+        install_amd_fw
     fi
 
     # build and install ncurses

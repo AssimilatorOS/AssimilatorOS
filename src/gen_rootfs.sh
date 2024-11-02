@@ -28,6 +28,7 @@ export BUILD_STATIC_BUSYBOX=1
 export BUILD_XFSPROGS=1
 export BUILD_DIALOG=1
 export BUILD_INTEL_FW=1
+export BUILD_AMD_FW=1
 
 function show_help() {
     echo "${SCRIPT_NAME} - Generate an Assimilator OS root filesystem"
@@ -49,6 +50,8 @@ function show_help() {
     echo "  --skip-partclone        Don't build the PartClone tools"
     echo "  --skip-xfsprogs         Don't build the XFS programs"
     echo "  --skip-dialog           Don't build the Dialog tool"
+    echo "  --skip-intel-ucode-fw   Don't install the Intel CPU microcode firmware"
+    echo "  --skip-amd-ucode-fw     Don't install the AMD CPU microcode firmware"
     echo ""
     echo "Report all bugs to https://github.com/AssimilatorOS/AssimilatorOS/issues"
 }
@@ -68,7 +71,7 @@ function process_cmd_flags() {
     tmpflags=$( \
         getopt \
             -o 'hv' \
-            --long 'ignore-image,skip-busybox,skip-static-busybox,skip-kernel,skip-grub,skip-efibootmgr,skip-pam,skip-jq,skip-sqlite3,skip-rsync,skip-nano,skip-partclone,skip-xfsprogs,skip-dialog' \
+            --long 'ignore-image,skip-busybox,skip-static-busybox,skip-kernel,skip-grub,skip-efibootmgr,skip-pam,skip-jq,skip-sqlite3,skip-rsync,skip-nano,skip-partclone,skip-xfsprogs,skip-dialog,skip-intel-ucode-fw,skip-amd-ucode-fw' \
             -n 'gen_rootfs' -- "$@" \
     ) || retval=$?
     if [[ $retval -ne 0 ]]; then
@@ -95,6 +98,8 @@ function process_cmd_flags() {
             '--skip-partclone')         BUILD_PARTCLONE=0       && shift && continue ;;
             '--skip-xfsprogs')          BUILD_XFSPROGS=0        && shift && continue ;;
             '--skip-dialog')            BUILD_DIALOG=0          && shift && continue ;;
+            '--skip-intel-ucode-fw')    BUILD_INTEL_FW=0        && shift && continue ;;
+            '--skip-amd-ucode-fw')      BUILD_AMD_FW=0          && shift && continue ;;
             '-v')                show_version                   && exit 0   ;;
             '-h')                show_help                      && exit 0   ;;
             '--')                                                  shift && break    ;;
