@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,10 +11,12 @@ import (
 	flags "github.com/spf13/pflag"
 
 	"github.com/greeneg/AssimilatorOS/src/mkinitramfs/config"
+	earlyfirmware "github.com/greeneg/AssimilatorOS/src/mkinitramfs/earlyFirmware"
+	"github.com/greeneg/AssimilatorOS/src/mkinitramfs/initramfs"
 )
 
 const defaultPlugins = "busybox, busybox-init, kernel-modules, mdev, mdev-rules, fs, compression"
-const VERSION = "mkinitramfs 0.0.1"
+const VERSION = "mkinitramfs 0.0.2"
 
 type enum struct {
 	Allowed []string
@@ -63,7 +66,7 @@ func charsToString(ca []int8) string {
 	return string(s[0:lens])
 }
 
-func processFlags(kRelease string, defKModDir string, config config.Config ) (config.Config) {
+func processFlags(kRelease string, defKModDir string, config config.Config) config.Config {
 	// Set our allowed compression types
 	compressor := newEnum([]string{"bzip2", "gzip", "lzma", "lzo", "xz"}, "xz")
 
@@ -76,9 +79,12 @@ func processFlags(kRelease string, defKModDir string, config config.Config ) (co
 	file := flags.StringP("file", "F", "/boot/initramfs.img", "Filename to write")
 	plugins := flags.StringArrayP("plugins", "p", config.Modules, "Plugins to enable for the build")
 	tmpDir := flags.StringP("tempdir", "t", "", "Temporary directory to use for creating the initramfs")
+	earlyFirmwareTmpDir := flags.StringP("early-fw-tmpdir", "e", "", "Temporary directory for creating the early firmware archive")
+	enableEarlyMicrocode := flags.BoolP("enable-early-microcode", "E", true, "Enable installing early microcode firmware")
+	hostOnly := flags.BoolP("host-specific", "H", false, "Build a host-specific initramfs")
 	sHelp := flags.BoolP("help", "h", false, "Show help information")
 	sVersion := flags.BoolP("version", "V", false, "Show version information")
-	flags.VarP(compressor, "commpression", "c", "Use a requested type of compression. [allowed: " + strings.Join(compressor.Allowed[:], ", ") + "]")
+	flags.VarP(compressor, "commpression", "c", "Use a requested type of compression. [allowed: "+strings.Join(compressor.Allowed[:], ", ")+"]")
 
 	// usage flag
 	flags.Usage = func() {
@@ -88,16 +94,6 @@ func processFlags(kRelease string, defKModDir string, config config.Config ) (co
 		flags.PrintDefaults()
 	}
 	flags.Parse()
-
-	if *tmpDir == "" {
-		// set our temp dir to a real temp dir
-		tmpDirStr, err := os.MkdirTemp(os.TempDir(), "tmp.")
-		if err != nil {
-			panic(err)
-		}
-
-		tmpDir = &tmpDirStr
-	}
 
 	// is help requested?
 	if *sHelp {
@@ -111,7 +107,11 @@ func processFlags(kRelease string, defKModDir string, config config.Config ) (co
 	}
 
 	// assign stuff into the struct
-	config.BuildDirectory = *tmpDir
+	if &tmpDir != nil {
+		config.BuildDirectory = *tmpDir
+	} else {
+		config.BuildDirectory = ""
+	}
 	config.CompressionType = compressor.Value
 	config.ConfigurationFile = *configFile
 	config.KernelModuleDir = *kmodDir
@@ -120,24 +120,31 @@ func processFlags(kRelease string, defKModDir string, config config.Config ) (co
 	config.UseForce = *useForce
 	config.StripBinaries = *stripBinaries
 	config.InitramfsFile = *file
+	config.HostSpecific = *hostOnly
+	if &earlyFirmwareTmpDir != nil {
+		config.EarlyFirmwareBuildDir = *earlyFirmwareTmpDir
+	} else {
+		config.EarlyFirmwareBuildDir = ""
+	}
+	config.EnableEarlyMicrocode = *enableEarlyMicrocode
 
 	return config
 }
 
 func setDefaultModules(config *config.Config) {
 	config.Modules = []string{
-		"00earlyfw",
-		"01base",
-		"02busybox",
-		"03busybox-init",
-		"04firmware",
-		"05fs",
-		"06kernel-modules",
-		"07mdev",
-		"08mdev-rules",
-		"09rootfs",
-		"10pivot",
-		"11compression",
+		"earlyfw",
+		"basedirs",
+		"busybox",
+		"busybox-init",
+		"firmware",
+		"fstools",
+		"kernel-modules",
+		"mdev",
+		"mdev-rules",
+		"rootfs",
+		"pivot",
+		"compression",
 	}
 }
 
@@ -154,18 +161,21 @@ func getRunningKernel() string {
 
 func displayOptions(config config.Config) {
 	fmt.Println("Command options enabled:")
-	fmt.Println("Kernel Version:           " + config.KernelVersion)
-	fmt.Println("Using force:              " + strconv.FormatBool(config.UseForce))
-	fmt.Println("Strip installed binaries: " + strconv.FormatBool(config.StripBinaries))
-	fmt.Println("File to write:            " + config.InitramfsFile)
-	fmt.Println("Kernel modules directory: " + config.KernelModuleDir)
-	fmt.Println("Temporary directory:      " + config.BuildDirectory)
-	fmt.Println("Image compression type:   " + config.CompressionType)
-	fmt.Println("Configuration JSON:       " + config.ConfigurationFile)
-	fmt.Println("Enabled plugins:          " + strings.Join(config.Modules, ", "))
+	fmt.Println("Kernel Version:                      " + config.KernelVersion)
+	fmt.Println("Using force:                         " + strconv.FormatBool(config.UseForce))
+	fmt.Println("Strip installed binaries:            " + strconv.FormatBool(config.StripBinaries))
+	fmt.Println("File to write:                       " + config.InitramfsFile)
+	fmt.Println("Kernel modules directory:            " + config.KernelModuleDir)
+	fmt.Println("Temporary directory:                 " + config.BuildDirectory)
+	fmt.Println("Enable early microcode loading:      " + strconv.FormatBool(config.EnableEarlyMicrocode))
+	fmt.Println("Early Microcode temporary directory: " + config.EarlyFirmwareBuildDir)
+	fmt.Println("Image compression type:              " + config.CompressionType)
+	fmt.Println("Configuration JSON:                  " + config.ConfigurationFile)
+	fmt.Println("Enabled plugins:                     " + strings.Join(config.Modules, ", "))
+	fmt.Println("Build host-specific initramfs:       " + strconv.FormatBool(config.HostSpecific))
 }
 
-func main () {
+func main() {
 	// set up default configuration
 	config := config.Config{}
 	// default modules
@@ -178,17 +188,66 @@ func main () {
 	displayOptions(config)
 
 	// read configuration
+	if _, err := os.Stat(config.ConfigurationFile); errors.Is(err, os.ErrNotExist) {
+		// the config doesn't exist, so use sane defaults
+		config.SetDefaultConfig(&config)
+	} else {
+		// file exists, set any base configurations from it
+		config.ReadAndApplyConfigFile(&config)
+	}
 
-	// create temp directory
+	// create temp directory for the early firmware image
+	if config.EnableEarlyMicrocode {
+		// do the same for the early microcode archive temp dir
+		if *&config.EarlyFirmwareBuildDir == "" {
+			earlyFirmwareTmpDirStr, err := os.MkdirTemp(os.TempDir(), "tmp.")
+			if err != nil {
+				panic(err)
+			}
 
-	// build initrd directory tree and symlinks
+			config.EarlyFirmwareBuildDir = earlyFirmwareTmpDirStr
+		}
+	} else {
+		config.EarlyFirmwareBuildDir = ""
+	}
+
+	// create early firmware cpio archive for CPU microcode
+	earlyFwArchive, err := earlyfirmware.CreateEarlyFirmwareArchive(config.EarlyFirmwareBuildDir)
+	if err != nil {
+		panic(err)
+	}
+
+	// create temp directory for the main initramfs image
+	if config.BuildDirectory == "" {
+		// set our temp dir to a real temp dir
+		tmpDirStr, err := os.MkdirTemp(os.TempDir(), "tmp.")
+		if err != nil {
+			panic(err)
+		}
+
+		config.BuildDirectory = tmpDirStr
+	}
 
 	// loop through plugins
 
-	// create cpio archive
+	// create cpio archive for primary initramfs image
+	mainArchivePath, err := initramfs.MkMainArchive(config.BuildDirectory)
+
+	// join both the early firmware cpio archive to the main initramfs archive
+	cpioFilePath, err := initramfs.MkArchive(earlyFwArchive, mainArchivePath)
 
 	// compress with requested compressor
+	compressedInitramfsPath, err := initramfs.CompressInitramFs(cpioFilePath, config.CompressionType)
+	if err != nil {
+		panic(err)
+	}
+
+	// determine permanent file name
+
+	// move into permanent location
+	err = os.Rename(compressedInitramfsPath, config.InitramfsFile)
 
 	// clean up
 	os.RemoveAll(config.BuildDirectory)
+	os.RemoveAll(config.EarlyFirmwareBuildDir)
 }

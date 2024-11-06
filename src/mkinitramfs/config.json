@@ -1,0 +1,4 @@
+{
+    "stripBinaries": false
+    "initramfsFile": "/boot/initramfs-$KERNELVERSION$.img"
+}
