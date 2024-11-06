@@ -22,3 +22,6 @@ rootfs
 3rdparty/build
 3rdparty/*/build
 3rdparty/*/build_tic
+
+# don't track the binary
+src/mkinitramfs/mkinitramfs
