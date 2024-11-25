@@ -325,7 +325,7 @@ function check_deps() {
         if [[ "$dep_solver" == "zypper" ]]; then
             status=$(zypper --xmlout --no-refresh info --type package libselinux1 | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
             if [[ "$status" == "Yes" ]]; then
-                return 0
+                echo "${dep}: ${bold}${green} installed${normal}"
             else
                 echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
             fi
