@@ -352,7 +352,6 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
