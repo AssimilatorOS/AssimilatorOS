@@ -5,11 +5,18 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="Linux Kernel"
+# shellcheck disable=SC2034
+dependencies=(
+    "glibc-devel"
+    "patterns-devel-base-devel_kernel"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_kernel() {
-    local tool="Linux Kernel"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         # ensure we are working with a clean tree
         rm -v -r -f build
@@ -24,9 +31,8 @@ function build_kernel() {
     popd >/dev/null
 }
 
-function install_kernel() {
-    local tool="Linux Kernel"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/linux" >/dev/null
         cd build
         make INSTALL_PATH=../../../rootfs/System/boot install ||:
@@ -37,8 +43,7 @@ function install_kernel() {
     popd >/dev/null
 }
 
-function clean_kernel() {
-    local tool="Linux Kernel"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.226/"
 }
