@@ -320,12 +320,12 @@ function platform_dep_solver() {
 function check_deps() {
     local status
     for dep in "$@"; do
-        echo "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}"
+        echo -n "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}: "
         dep_solver=$(platform_dep_solver)
         if [[ "$dep_solver" == "zypper" ]]; then
             status=$(zypper --xmlout --no-refresh info --type package libselinux1 | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
             if [[ "$status" == "Yes" ]]; then
-                echo "${dep}: ${bold}${green} installed${normal}"
+                echo "${bold}${green}installed${normal}"
             else
                 echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
             fi
