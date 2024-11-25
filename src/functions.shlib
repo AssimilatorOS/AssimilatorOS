@@ -300,20 +300,67 @@ function create_dir_tree() {
     popd >/dev/null
 }
 
+function platform_dep_solver() {
+    if [[ -f /etc/os-release ]]; then
+        # source in /etc/os-release
+        source /etc/os-release
+        if [[ "$ID" == "opensuse-leap" ]]; then
+            echo "zypper"
+        elif [[ "$ID" == "fedora" ]]; then
+            echo "dnf"
+        elif [[ "$ID" == "openmandriva" ]]; then
+            echo "urpmi"
+        fi
+    else
+        echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Cannot determine platform dependency solver! Exiting" >&2
+        exit 1
+    fi
+}
+
+function check_deps() {
+    local status
+    for dep in "$@"; do
+        echo -n "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}: "
+        dep_solver=$(platform_dep_solver)
+        if [[ "$dep_solver" == "zypper" ]]; then
+            status=$(zypper --no-refresh info --type package "$dep" | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
+            if [[ "$status" == "Yes" ]]; then
+                echo "${bold}${green}installed${normal}"
+            else
+                echo "${red}not installed${normal}"
+                echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+            fi
+        else
+            echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Dependency solver $dep_solver unsupported at this time! Exiting${normal}" >&2
+        fi
+    done
+}
+
+function clean_namespace() {
+    unset -f pkg_build
+    unset -f pkg_install
+    unset -f pkg_clean
+    unset dependencies
+}
+
 function build_3rdparty() {
     # build and install busybox
     if [[ $BUILD_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/busybox.pkg.sh"
-        build_busybox
-        install_busybox
-        clean_busybox
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/static-busybox.pkg.sh"
-        build_static_busybox
-        install_static_busybox
-        clean_static_busybox
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
     fi
 
     # build and install kernel

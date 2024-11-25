@@ -5,12 +5,21 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="BusyBox"
+# shellcheck disable=SC2034
+dependencies=(
+    "glibc-devel"
+    "libselinux1"
+    "libselinux-devel"
+    "libtirpc3"
+    "libtirpc-devel"
+)
+
 echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_busybox() {
-    local tool="BusyBox"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     # out of source builds don't seem to work, so in-source we go
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
@@ -20,9 +29,8 @@ function build_busybox() {
     popd >/dev/null
 }
 
-function install_busybox() {
-    local tool="BusyBox"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         # we use some applets that require setuid rights
         install -v -m 4755 -o root -g root busybox "$PROJ_DIR/rootfs/System/bin/"
@@ -47,9 +55,8 @@ function install_busybox() {
     popd >/dev/null
 }
 
-function clean_busybox() {
-    local tool="BusyBox"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
 }

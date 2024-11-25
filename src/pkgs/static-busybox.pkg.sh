@@ -7,7 +7,7 @@ PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_static_busybox() {
+function pkg_build() {
     local tool="BusyBox Static"
     echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
     # out of source builds don't seem to work, so in-source we go
@@ -19,7 +19,7 @@ function build_static_busybox() {
     popd >/dev/null
 }
 
-function install_static_busybox() {
+function pkg_install() {
     local tool="BusyBox Static"
     echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
@@ -35,7 +35,7 @@ function install_static_busybox() {
     popd >/dev/null
 }
 
-function clean_static_busybox() {
+function pkg_clean() {
     local tool="BusyBox"
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
