@@ -395,9 +395,12 @@ function build_3rdparty() {
     # build and install ncurses
     if [[ $BUILD_NCURSES == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/ncurses.pkg.sh"
-        build_ncurses
-        install_ncurses
-        clean_ncurses
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     # build and install GNU Grub2 bootloader
