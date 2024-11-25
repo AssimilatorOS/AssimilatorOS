@@ -11,6 +11,8 @@ dependencies=(
     "glibc-devel"
     "libselinux1"
     "libselinux-devel"
+    "libtirpc3"
+    "libtirpc-devel"
 )
 
 echo "PROJECT DIRECTORY: $PROJ_DIR"
