@@ -385,8 +385,12 @@ function build_3rdparty() {
 
     if [[ $BUILD_AMD_FW == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/amd-ucode.pkg.sh"
-        # like the Intel microcode, these are binary, so only install
-        install_amd_fw
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     # build and install ncurses
