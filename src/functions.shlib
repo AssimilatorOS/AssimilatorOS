@@ -347,11 +347,11 @@ function build_3rdparty() {
     if [[ $BUILD_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/busybox.pkg.sh"
         check_deps "${dependencies[@]}"
-        exit
         pkg_build
         pkg_install
         pkg_clean
         clean_namespace
+        exit
     fi
 
     if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
