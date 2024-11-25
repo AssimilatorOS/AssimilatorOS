@@ -329,6 +329,7 @@ function check_deps() {
             else
                 echo "${red}not installed${normal}"
                 echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+                exit 1
             fi
         else
             echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Dependency solver $dep_solver unsupported at this time! Exiting${normal}" >&2
