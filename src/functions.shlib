@@ -323,7 +323,7 @@ function check_deps() {
         echo -n "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}: "
         dep_solver=$(platform_dep_solver)
         if [[ "$dep_solver" == "zypper" ]]; then
-            status=$(zypper --xmlout --no-refresh info --type package libselinux1 | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
+            status=$(zypper --no-refresh info --type package libselinux1 | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
             if [[ "$status" == "Yes" ]]; then
                 echo "${bold}${green}installed${normal}"
             else
