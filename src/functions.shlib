@@ -327,6 +327,7 @@ function check_deps() {
             if [[ "$status" == "Yes" ]]; then
                 echo "${bold}${green}installed${normal}"
             else
+                echo "${red}not installed${normal}"
                 echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
             fi
         else
