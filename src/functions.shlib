@@ -321,7 +321,7 @@ function check_deps() {
     local status
     for dep in "$@"; do
         echo "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}"
-        dep_solver=platform_dep_solver
+        dep_solver=$(platform_dep_solver)
         if [[ "$dep_solver" == "zypper" ]]; then
             status=$(zypper --xmlout --no-refresh info --type package libselinux1 | grep -E "^Installed[[:space:]]+:" | awk '{ print $3 }')
             if [[ "$status" == "Yes" ]]; then
@@ -346,7 +346,7 @@ function build_3rdparty() {
     # build and install busybox
     if [[ $BUILD_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/busybox.pkg.sh"
-        check_deps "${dependencies[*]}"
+        check_deps "${dependencies[@]}"
         exit
         pkg_build
         pkg_install
