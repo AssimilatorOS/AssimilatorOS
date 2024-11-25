@@ -5,11 +5,17 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="BusyBox Static"
+# shellcheck disable=SC2034
+dependencies=(
+    "glibc-devel-static"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
 function pkg_build() {
-    local tool="BusyBox Static"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     # out of source builds don't seem to work, so in-source we go
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
@@ -20,8 +26,7 @@ function pkg_build() {
 }
 
 function pkg_install() {
-    local tool="BusyBox Static"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         install -v -m 4755 -o root -g root busybox "$PROJ_DIR/rootfs/System/bin/busybox-static"
         # the static version of busybox is for use in the initramfs, so don't install extra stuff
@@ -36,7 +41,6 @@ function pkg_install() {
 }
 
 function pkg_clean() {
-    local tool="BusyBox"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
 }

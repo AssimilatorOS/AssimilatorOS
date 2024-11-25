@@ -357,7 +357,7 @@ function build_3rdparty() {
 
     if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/static-busybox.pkg.sh"
-        check_deps "glibc-devel-static"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
