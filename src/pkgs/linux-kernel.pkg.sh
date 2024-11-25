@@ -8,7 +8,10 @@ PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 pkgname="Linux Kernel"
 # shellcheck disable=SC2034
 dependencies=(
+    "coreutils"
+    "git-core"
     "glibc-devel"
+    "make"
     "patterns-devel-base-devel_kernel"
 )
 

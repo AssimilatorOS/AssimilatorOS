@@ -8,7 +8,10 @@ PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 pkgname="BusyBox Static"
 # shellcheck disable=SC2034
 dependencies=(
+    "coreutils"
+    "git-core"
     "glibc-devel-static"
+    "make"
 )
 
 echo "PROJECT DIRECTORY: $PROJ_DIR"

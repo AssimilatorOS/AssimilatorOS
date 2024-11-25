@@ -376,8 +376,12 @@ function build_3rdparty() {
 
     if [[ $BUILD_INTEL_FW == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/intel-ucode.pkg.sh"
-        # these are binary, so no build sources or anything to clean
-        install_intel_fw
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     if [[ $BUILD_AMD_FW == 1 ]]; then
