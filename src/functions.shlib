@@ -400,7 +400,6 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     # build and install GNU Grub2 bootloader
