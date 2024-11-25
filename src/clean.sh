@@ -53,7 +53,7 @@ pushd "${PROJ_DIR}" >/dev/null
         # remove extra stuff from compressing man pages
         rm -vf src/*.8.gz ||:
     popd >/dev/null
-    git checkout -- "$PROJ_DIR/3rdparty/busybox-1.36.1/"
+    git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
     git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.226/"
     git checkout -- "$PROJ_DIR/3rdparty/ncurses-6.5/"

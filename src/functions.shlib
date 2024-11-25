@@ -329,6 +329,7 @@ function check_deps() {
             else
                 echo "${red}not installed${normal}"
                 echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+                exit 1
             fi
         else
             echo "${bold}${white}${red_bg}${SCRIPT_NAME}: Dependency solver $dep_solver unsupported at this time! Exiting${normal}" >&2
@@ -352,11 +353,11 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     if [[ $BUILD_STATIC_BUSYBOX == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/static-busybox.pkg.sh"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
@@ -366,9 +367,11 @@ function build_3rdparty() {
     # build and install kernel
     if [[ $BUILD_KERNEL == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/linux-kernel.pkg.sh"
-        build_kernel
-        install_kernel
-        clean_kernel
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
     fi
 
     if [[ $BUILD_INTEL_FW == 1 ]]; then
