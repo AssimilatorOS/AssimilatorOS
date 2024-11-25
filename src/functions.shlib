@@ -368,9 +368,11 @@ function build_3rdparty() {
     # build and install kernel
     if [[ $BUILD_KERNEL == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/linux-kernel.pkg.sh"
-        build_kernel
-        install_kernel
-        clean_kernel
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
     fi
 
     if [[ $BUILD_INTEL_FW == 1 ]]; then
