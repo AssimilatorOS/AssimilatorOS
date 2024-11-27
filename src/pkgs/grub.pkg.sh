@@ -21,6 +21,7 @@ dependencies=(
     "libtasn1-devel"
     "make"
     "perl"
+    "squashfs"
     "tar"
     "xz-devel"
 )
