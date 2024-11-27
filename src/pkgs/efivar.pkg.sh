@@ -5,19 +5,26 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="EFI Variable Tools"
+# shellcheck disable=SC2034
+dependencies=(
+    "binutils"
+    "findutils"
+    "glibc"
+    "make"
+)
+
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_efivar() {
-    local tool="EFI Var tools"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
         make -j4
     popd >/dev/null
 }
 
-function install_efivar() {
-    local tool="EFI Var tools"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
         make DESTDIR="$PROJ_DIR/rootfs" \
              BINDIR="/System/bin" \
@@ -37,9 +44,8 @@ function install_efivar() {
     strip -v -s $PROJ_DIR/rootfs/lib64/libefi*
 }
 
-function clean_efivar() {
-    local tool="EFI Var tools"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efivar" >/dev/null
         make clean
     popd >/dev/null
