@@ -63,8 +63,7 @@ function pkg_build() {
         # echo "grub,4,Free Software Foundation,grub,2.12,https://www.gnu.org/software/grub/" >> sbat.csv
         # echo "grub.assimilatoros,1,Assimilator OS,grub,2.12,https://github.com/greeneg/AssimilatorOS" >> sbat.csv
         mkdir -pv ./fonts
-        cp -v /usr/share/grub2/themes/*/*.pf2 ./fonts
-        cp -v ./unicode.pf2 ./fonts
+        cp -v ../fonts/*.pf2 ./fonts
         tar --sort=name -cvf - ./fonts | mksquashfs - memdisk.sqsh -tar -comp xz
 
         # again, not doing secure boot for now
