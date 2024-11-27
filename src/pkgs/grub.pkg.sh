@@ -5,11 +5,32 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="GNU Grub v2"
+# shellcheck disable=SC2034
+dependencies=(
+    "binutils"
+    "coreutils"
+    "device-mapper-devel"
+    "findutils"
+    "freetype2-devel"
+    "fuse-devel"
+    "gettext-runtime"
+    "gettext-tools"
+    "git-core"
+    "glibc-devel"
+    "libtasn1-devel"
+    "make"
+    "perl"
+    "squashfs"
+    "tar"
+    "xz-devel"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_grub() {
-    local tool="GNU Grub v2"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
         ulimit -a
         touch docs/grub.texi
@@ -43,8 +64,7 @@ function build_grub() {
         # echo "grub,4,Free Software Foundation,grub,2.12,https://www.gnu.org/software/grub/" >> sbat.csv
         # echo "grub.assimilatoros,1,Assimilator OS,grub,2.12,https://github.com/greeneg/AssimilatorOS" >> sbat.csv
         mkdir -pv ./fonts
-        cp -v /usr/share/grub2/themes/*/*.pf2 ./fonts
-        cp -v ./unicode.pf2 ./fonts
+        cp -v ../fonts/*.pf2 ./fonts
         tar --sort=name -cvf - ./fonts | mksquashfs - memdisk.sqsh -tar -comp xz
 
         # again, not doing secure boot for now
@@ -57,9 +77,8 @@ function build_grub() {
     popd >/dev/null
 }
 
-function install_grub() {
-    local tool="GNU Grub v2"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/grub" >/dev/null
         cd build
             make DESTDIR="$PROJ_DIR/rootfs" install
@@ -92,9 +111,8 @@ function install_grub() {
     popd >/dev/null
 }
 
-function clean_grub() {
-    local tool="GNU Grub v2"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/grub/build"
     pushd "${PROJ_DIR}/3rdparty/grub" >/dev/null
         rm -rfv __pycache__/

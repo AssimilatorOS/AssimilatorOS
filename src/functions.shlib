@@ -405,9 +405,12 @@ function build_3rdparty() {
     # build and install GNU Grub2 bootloader
     if [[ $BUILD_GRUB == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/grub.pkg.sh"
-        build_grub
-        install_grub
-        clean_grub
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     # efibootmgr needs a new enough version of efivar
