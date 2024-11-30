@@ -8,6 +8,9 @@ PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 pkgname="Linux PAM"
 # shellcheck disable=SC2034
 dependencies=(
+    # TODO: need to add automake 1.16 to the build tree. Current work around is to add
+    #       symlinks from 1.17 to 1.16
+    "automake"
     "binutils"
     "coreutils"
     "findutils"
