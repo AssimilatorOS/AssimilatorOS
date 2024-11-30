@@ -5,11 +5,23 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="EFI Boot Manager"
+# shellcheck disable=SC2034
+dependencies=(
+    "binutils"
+    "coreutils"
+    "glibc-devel"
+    "gzip"
+    "make"
+    "popt-devel"
+    "sed"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_efibootmgr() {
-    local tool="EFI Boot Manager"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
         sed -e '/extern int efi_set_verbose/d' -i "src/efibootmgr.c"
         LOADER="grub.efi"  # default loader
@@ -25,9 +37,8 @@ function build_efibootmgr() {
     popd >/dev/null
 }
 
-function install_efibootmgr() {
-    local tool="EFI Boot Manager"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
         install -v -m 755 -o root -g root src/efibootdump "$PROJ_DIR/rootfs/System/sbin/"
         install -v -m 755 -o root -g root src/efibootmgr  "$PROJ_DIR/rootfs/System/sbin/"
@@ -40,9 +51,8 @@ function install_efibootmgr() {
     popd >/dev/null
 }
 
-function clean_efibootmgr() {
-    local tool="EFI Boot Manager"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/efibootmgr" >/dev/null
         LOADER="grub.efi"  # default loader
         VENDOR="AssimilatorOS"

@@ -10,10 +10,11 @@ pkgname="EFI Variable Tools"
 dependencies=(
     "binutils"
     "findutils"
-    "glibc"
+    "glibc-devel"
     "make"
 )
 
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
 function pkg_build() {
