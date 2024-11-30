@@ -23,7 +23,9 @@ dependencies=(
     "make"
     "openslp-devel"
     "popt-devel"
+    "python3-CommonMark"
     "sed"
+    "xxhash-devel"
     "zlib-devel"
     "zstd"
 )
