@@ -10,7 +10,7 @@ pkgname="EFI Variable Tools"
 dependencies=(
     "binutils"
     "findutils"
-    "glibc"
+    "glibc-devel"
     "make"
 )
 

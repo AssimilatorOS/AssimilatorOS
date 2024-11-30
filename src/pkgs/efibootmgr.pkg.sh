@@ -10,9 +10,10 @@ pkgname="EFI Boot Manager"
 dependencies=(
     "binutils"
     "coreutils"
-    "glibc"
+    "glibc-devel"
     "gzip"
     "make"
+    "popt-devel"
     "sed"
 )
 
