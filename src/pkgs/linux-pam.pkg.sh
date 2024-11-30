@@ -5,11 +5,28 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="Linux PAM"
+# shellcheck disable=SC2034
+dependencies=(
+    # TODO: need to add automake 1.16 to the build tree. Current work around is to add
+    #       symlinks from 1.17 to 1.16
+    "automake"
+    "binutils"
+    "coreutils"
+    "findutils"
+    "glibc-devel"
+    "gzip"
+    "libeconf-devel"
+    "libselinux-devel"
+    "libsepol-devel"
+    "make"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_linuxpam() {
-    local tool="Linux PAM"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/pam" >/dev/null
         mkdir -p -v build
         pushd build >/dev/null
@@ -29,9 +46,7 @@ function build_linuxpam() {
                          --disable-db \
                          --disable-nis \
                          --disable-logind \
-                         --disable-econf \
-                         --disable-rpath \
-                         --disable-selinux
+                         --disable-rpath
             make -j4
             gcc -fwhole-program -fpie -pie -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -O2 -g -m64 -fmessage-length=0 \
                 -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables \
@@ -40,9 +55,8 @@ function build_linuxpam() {
     popd >/dev/null
 }
 
-function install_linuxpam() {
-    local tool="Linux PAM"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/pam" >/dev/null
         # first create our required directories
         install -v -d -m 755 -o root -g root "$PROJ_DIR/rootfs/System/cfg/pam.d"
@@ -87,9 +101,8 @@ function install_linuxpam() {
     popd >/dev/null
 }
 
-function clean_linuxpam() {
-    local tool="Linux PAM"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/pam/build"
     git checkout -- "$PROJ_DIR/3rdparty/Linux-PAM-1.6.1/"
 }
