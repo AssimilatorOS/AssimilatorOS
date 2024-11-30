@@ -14,6 +14,7 @@ dependencies=(
     "make"
 )
 
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
 function pkg_build() {
