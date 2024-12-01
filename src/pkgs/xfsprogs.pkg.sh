@@ -51,8 +51,8 @@ function pkg_build() {
                         --sysconfdir=/System/cfg \
                         --libdir=/System/lib64 \
                         --libexecdir=/System/lib \
-                        --enable-editline=yes \
-                        --enable-libicu=yes
+                        --enable-prefix="" \
+                        --enable-editline=yes
             make -j4
         popd >/dev/null
     popd >/dev/null
