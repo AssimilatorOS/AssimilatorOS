@@ -26,7 +26,7 @@ function pkg_build() {
     # out of source builds don't seem to work, so in-source we go
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
-        cp -v "$PROJ_DIR/config/BusyBox.config" .config
+        cp -v "$PROJ_DIR/configs/BusyBox.config" .config
         make oldconfig
         make
     popd >/dev/null
