@@ -422,6 +422,7 @@ function build_3rdparty() {
         clean_namespace
 
         source "$PROJ_DIR/src/pkgs/efibootmgr.pkg.sh"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
@@ -431,6 +432,7 @@ function build_3rdparty() {
     # build Linux PAM
     if [[ $BUILD_LINUXPAM == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/linux-pam.pkg.sh"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
@@ -440,6 +442,7 @@ function build_3rdparty() {
     # build and install JQ
     if [[ $BUILD_JQ == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/jq.pkg.sh"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
@@ -449,19 +452,22 @@ function build_3rdparty() {
     # build and install SQLite3
     if [[ $BUILD_SQLITE3 == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/sqlite3.pkg.sh"
+        check_deps "${dependencies[@]}"
         pkg_build
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     # build and install Rsync
     if [[ $BUILD_RSYNC == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/rsync.pkg.sh"
-        build_rsync
-        install_rsync
-        clean_rsync
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     # build and install GNU Nano
