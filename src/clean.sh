@@ -55,7 +55,7 @@ pushd "${PROJ_DIR}" >/dev/null
     popd >/dev/null
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
     git checkout -- "$PROJ_DIR/3rdparty/grub-2.12/"
-    git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.226/"
+    git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.230/"
     git checkout -- "$PROJ_DIR/3rdparty/ncurses-6.5/"
 popd >/dev/null
 
