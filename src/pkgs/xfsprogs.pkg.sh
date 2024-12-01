@@ -20,6 +20,7 @@ dependencies=(
     "libblkid-devel"
     "libedit-devel"
     "libinih-devel"
+    "libtool"
     "liburcu-devel"
     "libuuid-devel"
     "make"
@@ -35,8 +36,11 @@ function pkg_build() {
         mkdir -pv ../build
         cp -av ./* ../build/
         pushd ../build >/dev/null
-            aclocal -I m4
-            autoconf
+            # there is no configure in the tarball, so generate one from the included configure.ac
+            libtoolize -c -i -f -v
+            cp -v include/install-sh .
+            aclocal -I m4 --verbose
+            autoconf -v
             export OPTIMIZER="-fPIC"
             export DEBUG=-DNDEBUG
             export LIBUUID=/usr/lib64/libuuid.a
