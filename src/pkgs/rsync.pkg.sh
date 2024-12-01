@@ -24,6 +24,7 @@ dependencies=(
     "openslp-devel"
     "popt-devel"
     "python3-CommonMark"
+    "python3-cmarkgfm"
     "sed"
     "xxhash-devel"
     "zlib-devel"
