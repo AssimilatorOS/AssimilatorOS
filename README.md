@@ -23,20 +23,20 @@ Currently, Assimilator OS uses the following components for the operating system
 
 | Component | Version | License | URL |
 | --- | --- | --- | --- |
-| BusyBox | 1.36.1 | [GPLv2](3rdparty/busybox-1.37.0/LICENSE) | https://www.busybox.net/ |
-| Linux Kernel | 5.10.226 (LTS) | [GPLv2](3rdparty/linux-5.10.226/COPYING) | https://www.kernel.org/ |
+| BusyBox | 1.37.0 | [GPLv2](3rdparty/busybox-1.37.0/LICENSE) | https://www.busybox.net/ |
+| Linux Kernel | 5.10.230 (LTS) | [GPLv2](3rdparty/linux-5.10.230/COPYING) | https://www.kernel.org/ |
 | GNU Grub | 2.12 | [GPLv3](3rdparty/grub-2.12) | https://www.gnu.org/software/grub/ |
 | EFI Variables library | 39 | [LGPLv2.1](3rdparty/efivar-39/COPYING) | https://github.com/rhboot/efivar |
 | EFI Boot Manager | 18 | [GPLv2](3rdparty/efibootmgr-18/COPYING) | https://github.com/rhboot/efibootmgr |
 | Intel Processor Microcode | 20240910 | [Proprietary/Redistributable](3rdparty/Intel-Linux-Processor-Microcode-Data-Files-microcode-20240910/license) | https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files |
 | Linux Kernel Firmware | 20241101 | [Proprietary/Redistributable](3rdparty/linux-firmware-202411011502/) | https://git.kernel.org/pub/scm/linux/kernel/git/firmware/ |
-| Linux PAM | 1.6.1 | [GPLv2/BSD-3 Clause](3rdparty/Linux-PAM-1.6.1/COPYING) | https://github.com/linux-pam/linux-pam |
+| Linux PAM | 1.7.0 | [GPLv2/BSD-3 Clause](3rdparty/Linux-PAM-1.7.0/COPYING) | https://github.com/linux-pam/linux-pam |
 | JQ | 1.7.1 | [CC-BY-3.0/MIT](3rdparty/jq-1.7.1/COPYING) | https://jqlang.github.io/jq/ |
-| SQLite3 | 3.46.1 | [Public Domain](https://sqlite.org/copyright.html) | https://sqlite.org/index.html |
+| SQLite3 | 3.47.1 | [Public Domain](https://sqlite.org/copyright.html) | https://sqlite.org/index.html |
 | Rsync | 3.3.0 | [GPLv3](3rdparty/rsync-3.3.0/COPYING) | https://rsync.samba.org/ |
 | GNU Nano Editor | 8.2 | [GPLv3](3rdparty/nano-8.2/COPYING) | https://www.nano-editor.org/ |
 | NCurses | 6.5 | [MIT](3rdparty/ncurses-6.5/COPYING) | https://invisible-island.net/ncurses/ |
 | Dialog | 1.3 | [LGPLv2.1](3rdparty/dialog-1.3-20240619/COPYING) | https://invisible-island.net/dialog/ |
-| XFS Progs | 6.10.1 | [GPLv2](3rdparty/xfsprogs-6.10.1/LICENSES/GPL-2.0) | https://xfs.wiki.kernel.org/ |
+| XFS Progs | 6.11.0 | [GPLv2](3rdparty/xfsprogs-6.11.0/LICENSES/GPL-2.0) | https://xfs.wiki.kernel.org/ |
 
 Individual 3rd-party components are licensed under their own terms and conditions. This project "vendors" components to ensure that the system is buildable at any time. Periodically, the vendored versions will be replaced with newer versions or replacement libraries and tooling designed for smaller installations.
