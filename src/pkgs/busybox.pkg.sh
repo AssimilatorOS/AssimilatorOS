@@ -26,7 +26,7 @@ function pkg_build() {
     # out of source builds don't seem to work, so in-source we go
     pushd "$PROJ_DIR/3rdparty/busybox" >/dev/null
         make mrproper
-        cp -v "$PROJ_DIR/3rdparty/BusyBox.config" .config
+        cp -v "$PROJ_DIR/config/BusyBox.config" .config
         make oldconfig
         make
     popd >/dev/null
@@ -60,6 +60,5 @@ function pkg_install() {
 
 function pkg_clean() {
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
-    rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"
     git checkout -- "$PROJ_DIR/3rdparty/busybox-1.37.0/"
 }
