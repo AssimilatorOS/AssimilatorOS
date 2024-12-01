@@ -27,7 +27,7 @@ function pkg_build() {
         mkdir -v build
         cd build
         make KBUILD_SRC=../ -f ../Makefile mrproper
-        cp -v "$PROJ_DIR/3rdparty/LinuxKernel.config" .config
+        cp -v "$PROJ_DIR/configs/LinuxKernel.config" .config
         make KBUILD_SRC=../ -f ../Makefile oldconfig
         make -j4
         cd -
