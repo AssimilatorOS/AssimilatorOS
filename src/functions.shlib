@@ -233,51 +233,51 @@ function install_configuration_files() {
         touch etc/hostname
         ln -sv hostname etc/HOSTNAME
         touch etc/network/interfaces
-        install -v -m 644 -o root -g root ../configs/acpi.map etc/
-        install -v -m 644 -o root -g root ../configs/acpid.conf etc/
-        install -v -m 600 -o root -g root ../configs/cron.deny etc/
-        install -v -m 644 -o root -g root ../configs/ethers etc/
-        install -v -m 644 -o root -g root ../configs/ethertypes etc/
-        install -v -m 644 -o root -g root ../configs/exports etc/
-        install -v -m 644 -o root -g root ../configs/filesystems etc/
-        install -v -m 644 -o root -g root ../configs/fstab etc/
-        install -v -m 644 -o root -g root ../configs/group etc/
-        install -v -m 644 -o root -g root ../configs/hosts etc/
-        install -v -m 644 -o root -g root ../configs/hosts.allow etc/
-        install -v -m 644 -o root -g root ../configs/hosts.deny etc/
-        install -v -m 644 -o root -g root ../configs/host.conf etc/
-        install -v -m 644 -o root -g root ../configs/httpd.conf etc/
-        install -v -m 644 -o root -g root ../configs/inputrc etc/
-        install -v -m 644 -o root -g root ../configs/issue etc/
-        install -v -m 644 -o root -g root ../configs/issue.net etc/
-        install -v -m 644 -o root -g root ../configs/ld.so.conf etc/
-        install -v -m 644 -o root -g root ../configs/login.defs etc/
-        install -v -m 644 -o root -g root ../configs/mactab etc/
-        install -v -m 644 -o root -g root ../configs/man.conf etc/
-        install -v -m 644 -o root -g root ../configs/motd etc/
-        install -v -m 644 -o root -g root ../configs/netconfig etc/
-        install -v -m 644 -o root -g root ../configs/netgroup etc/
-        install -v -m 644 -o root -g root ../configs/networks etc/
-        install -v -m 644 -o root -g root ../configs/nsswitch.conf etc/
-        install -v -m 644 -o root -g root ../configs/ntp.conf etc/
-        install -v -m 644 -o root -g root ../configs/passwd etc/
-        install -v -m 644 -o root -g root ../configs/protocols etc/
-        install -v -m 644 -o root -g root ../configs/resolv.conf etc/
-        install -v -m 644 -o root -g root ../configs/rpc etc/
-        install -v -m 644 -o root -g root ../configs/securetty etc/
-        install -v -m 644 -o root -g root ../configs/services etc/
-        install -v -m 600 -o root -g root ../configs/shadow etc/
-        install -v -m 644 -o root -g root ../configs/shells etc/
-        install -v -m 644 -o root -g root ../configs/sysctl.conf etc/
-        install -v -m 644 -o root -g root ../configs/syslog.conf etc/
-        install -v -m 644 -o root -g root ../configs/assimilatoros-release etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/acpi.map etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/acpid.conf etc/
+        install -v -m 600 -o root -g root ../configs/rootfs/System/cfg/cron.deny etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/ethers etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/ethertypes etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/exports etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/filesystems etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/fstab etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/group etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/hosts etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/hosts.allow etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/hosts.deny etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/host.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/httpd.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/inputrc etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/issue etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/issue.net etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/ld.so.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/login.defs etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/mactab etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/man.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/motd etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/netconfig etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/netgroup etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/networks etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/nsswitch.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/ntp.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/passwd etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/protocols etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/resolv.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/rpc etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/securetty etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/services etc/
+        install -v -m 600 -o root -g root ../configs/rootfs/System/cfg/shadow etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/shells etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/sysctl.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/syslog.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/assimilatoros-release etc/
         pushd System/cfg >/dev/null
             ln -sv assimilatoros-release os-release
         popd >/dev/null
-        install -v -m 644 -o root -g root ../configs/dnsd.conf etc/
-        install -v -m 644 -o root -g root ../configs/inetd.conf etc/
-        install -v -m 644 -o root -g root ../configs/inittab etc/
-        install -v -m 644 -o root -g root ../configs/mdev.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/dnsd.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/inetd.conf etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/inittab etc/
+        install -v -m 644 -o root -g root ../configs/rootfs/System/cfg/mdev.conf etc/
     popd >/dev/null
 }
 
