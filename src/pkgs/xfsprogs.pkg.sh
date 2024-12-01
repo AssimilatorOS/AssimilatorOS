@@ -8,6 +8,8 @@ PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 pkgname="XFS Programs"
 # shellcheck disable=SC2034
 dependencies=(
+    "autoconf"
+    "automake"
     "bash"
     "binutils"
     "coreutils"
@@ -33,6 +35,8 @@ function pkg_build() {
         mkdir -pv ../build
         cp -av ./* ../build/
         pushd ../build >/dev/null
+            aclocal -I m4
+            autoconf
             export OPTIMIZER="-fPIC"
             export DEBUG=-DNDEBUG
             export LIBUUID=/usr/lib64/libuuid.a
