@@ -19,6 +19,7 @@ dependencies=(
     "gzip"
     "libblkid-devel"
     "libedit-devel"
+    "libicu-devel"
     "libinih-devel"
     "libtool"
     "liburcu-devel"
