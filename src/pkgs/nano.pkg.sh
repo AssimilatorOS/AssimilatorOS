@@ -5,11 +5,25 @@ set -o pipefail
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 PROJ_DIR="$(dirname "$(cd "$SRC_DIR" &> /dev/null && pwd)")/.."
 
+pkgname="GNU Nano"
+# shellcheck disable=SC2034
+dependencies=(
+    "binutils"
+    "coreutils"
+    "file-devel"
+    "findutils"
+    "glibc-devel"
+    "git-core"
+    "gzip"
+    "make"
+    "ncurses-devel"
+)
+
+echo "PROJECT DIRECTORY: $PROJ_DIR"
 source "$PROJ_DIR/src/termcolors.shlib"
 
-function build_nano() {
-    local tool="GNU Nano"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${tool}${normal}"
+function pkg_build() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Building ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/nano" >/dev/null
         mkdir -pv build
         pushd build >/dev/null
@@ -27,9 +41,8 @@ function build_nano() {
     popd >/dev/null
 }
 
-function install_nano() {
-    local tool="GNU Nano"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${tool}${normal}"
+function pkg_install() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Installing ${pkgname}${normal}"
     pushd "$PROJ_DIR/3rdparty/nano" >/dev/null
         pushd build >/dev/null
             make DESTDIR="$PROJ_DIR/rootfs" install
@@ -46,9 +59,8 @@ function install_nano() {
     install -v -m 644 -o root -g root "$PROJ_DIR/configs/nanorc" "$PROJ_DIR/rootfs/System/cfg/nanorc"
 }
 
-function clean_nano() {
-    local tool="GNU Nano"
-    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${tool}${normal}"
+function pkg_clean() {
+    echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
     rm -rfv "${PROJ_DIR}/3rdparty/nano/build"
     git checkout -- "$PROJ_DIR/3rdparty/nano-8.2/"
 }
