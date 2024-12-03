@@ -27,7 +27,7 @@ function pkg_build() {
         mkdir -v build
         cd build
         make KBUILD_SRC=../ -f ../Makefile mrproper
-        cp -v "$PROJ_DIR/3rdparty/LinuxKernel.config" .config
+        cp -v "$PROJ_DIR/configs/LinuxKernel.config" .config
         make KBUILD_SRC=../ -f ../Makefile oldconfig
         make -j4
         cd -
@@ -42,11 +42,11 @@ function pkg_install() {
         make INSTALL_MOD_PATH=../../../rootfs/System modules_install ||:
         cd -
         # clean up after ourselves
-        rm -v -r -f build
+        # rm -v -r -f build
     popd >/dev/null
 }
 
 function pkg_clean() {
     echo "${bold}${aqua}${SCRIPT_NAME}: Cleaning ${pkgname}${normal}"
-    git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.226/"
+    git checkout -- "$PROJ_DIR/3rdparty/linux-5.10.230/"
 }

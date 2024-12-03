@@ -363,7 +363,6 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     # build and install kernel
@@ -374,6 +373,7 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
+        exit
     fi
 
     if [[ $BUILD_INTEL_FW == 1 ]]; then
@@ -479,15 +479,17 @@ function build_3rdparty() {
         pkg_install
         pkg_clean
         clean_namespace
-        exit
     fi
 
     # build and install XFS Programs
     if [[ $BUILD_XFSPROGS == 1 ]]; then
         source "$PROJ_DIR/src/pkgs/xfsprogs.pkg.sh"
-        build_xfsprogs
-        install_xfsprogs
-        clean_xfsprogs
+        check_deps "${dependencies[@]}"
+        pkg_build
+        pkg_install
+        pkg_clean
+        clean_namespace
+        exit
     fi
 
     # build and install dialog
