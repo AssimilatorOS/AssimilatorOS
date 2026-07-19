@@ -70,8 +70,8 @@ function create_vdisk() {
         sfdisk /dev/loop0 < "$PROJ_DIR/vdisk.sfdisk"
         sleep 5
         partprobe -s
-        losetup -v -D /dev/loop0
-        losetup -v -P /dev/loop0 "$PROJ_DIR/vdisk.img"
+        losetup -D /dev/loop0
+        losetup -P /dev/loop0 "$PROJ_DIR/vdisk.img"
         sleep 1
         # format ESP
         mkfs.vfat -v -n ESP -F 32 /dev/loop0p1
