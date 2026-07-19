@@ -60,7 +60,7 @@ function show_version() {
     echo "${SCRIPT_NAME} - Generate an Assimilator OS root filesystem"
     echo "==========================================================="
     echo "Author: Gary L. Greene, Jr."
-    echo "Version: 1.0"
+    echo "Version: 2026.07.19"
     echo "License: GPL version 2"
     echo ""
     echo "Report all bugs to https://github.com/AssimilatorOS/AssimilatorOS/issues"
