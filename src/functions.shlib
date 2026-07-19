@@ -306,6 +306,8 @@ function platform_dep_solver() {
         source /etc/os-release
         if [[ "$ID" == "opensuse-leap" ]]; then
             echo "zypper"
+        elif [[ "$ID" == "arch" ]]; then
+            echo "pacman"
         elif [[ "$ID" == "fedora" ]]; then
             echo "dnf"
         elif [[ "$ID" == "openmandriva" ]]; then
@@ -323,8 +325,50 @@ function check_deps() {
         echo -n "${bold}${aqua}${SCRIPT_NAME}: checking dependency: ${dep}${normal}: "
         dep_solver=$(platform_dep_solver)
         if [[ "$dep_solver" == "zypper" ]]; then
+            # now figure out naming of package for this platform
+            
             # if we have zypper, we can safely assume RPM is in use
             rpm -q "$dep" >/dev/null 2>&1 || retval=$?
+            if [[ "$retval" == 0 ]]; then
+                echo "${bold}${green}installed${normal}"
+            else
+                echo "${red}not installed${normal}"
+                echo "${red_bg}${bold}${white}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+                exit 1
+            fi
+        elif [[ "$dep_solver" == "pacman" ]]; then
+            local pkg="$dep"
+
+            # Translate canonical dependency name to Arch package name (if mapping exists).
+            if [[ -f "$PROJ_DIR/src/pkgnames.json" ]] && [[ -f /etc/os-release ]]; then
+                source /etc/os-release
+                pkg="$(jq -r --arg dist "$ID" --arg dep "$dep" '.[$dist].pkg_map[$dep] as $m | if $m == "" then "" elif $m == null then $dep else $m end' "$PROJ_DIR/src/pkgnames.json")"
+            fi
+
+            if [[ -z "$pkg" ]]; then
+                echo "${bold}${yellow}skipped${normal} (no Arch package mapping for ${dep})"
+                continue
+            fi
+
+            pacman -Q "$pkg" >/dev/null 2>&1 || retval=$?
+            if [[ "$retval" == 0 ]]; then
+                echo "${bold}${green}installed${normal}"
+            else
+                echo "${red}not installed${normal}"
+                echo "${red_bg}${bold}${white}${SCRIPT_NAME}: Missing dependency: ${pkg}! Exiting${normal}"
+                exit 1
+            fi
+        elif [[ "$dep_solver" == "dnf" ]]; then
+            dnf list --installed "$dep" >/dev/null 2>&1 || retval=$?
+            if [[ "$retval" == 0 ]]; then
+                echo "${bold}${green}installed${normal}"
+            else
+                echo "${red}not installed${normal}"
+                echo "${red_bg}${bold}${white}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+                exit 1
+            fi
+        elif [[ "$dep_solver" == "urpmi" ]]; then
+            urpmi --test "$dep" >/dev/null 2>&1 || retval=$?
             if [[ "$retval" == 0 ]]; then
                 echo "${bold}${green}installed${normal}"
             else

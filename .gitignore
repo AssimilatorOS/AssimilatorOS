@@ -25,3 +25,4 @@ rootfs
 
 # don't track the binary
 src/mkinitramfs/mkinitramfs
+src/svcmgr/svcmgr
