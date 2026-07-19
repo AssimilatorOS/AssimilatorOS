@@ -1,0 +1,9 @@
+{
+  "name": "network",
+  "description": "Network initialization service",
+  "exec_start": "/System/bin/ifup -a",
+  "exec_stop": "/System/bin/ifdown -a",
+  "dependencies": [],
+  "runlevels": ["default"],
+  "enabled": true
+}

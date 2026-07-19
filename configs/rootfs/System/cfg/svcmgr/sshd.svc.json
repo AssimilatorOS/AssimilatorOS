@@ -1,0 +1,9 @@
+{
+  "name": "sshd",
+  "description": "OpenSSH server daemon",
+  "exec_start": "/System/bin/sshd -D",
+  "exec_stop": "",
+  "dependencies": ["network", "syslog"],
+  "runlevels": ["default"],
+  "enabled": true
+}

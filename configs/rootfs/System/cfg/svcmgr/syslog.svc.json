@@ -1,0 +1,9 @@
+{
+  "name": "syslog",
+  "description": "System logging daemon",
+  "exec_start": "/System/bin/syslogd -n",
+  "exec_stop": "",
+  "dependencies": [],
+  "runlevels": ["earlyboot", "default"],
+  "enabled": true
+}

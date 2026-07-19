@@ -1,0 +1,9 @@
+{
+  "name": "httpd",
+  "description": "HTTP server for imaging operations",
+  "exec_start": "/System/bin/httpd -f -p 8080",
+  "exec_stop": "",
+  "dependencies": ["network"],
+  "runlevels": ["default"],
+  "enabled": true
+}
