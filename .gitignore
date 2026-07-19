@@ -13,7 +13,7 @@ vdisk.img
 3rdparty/busybox*/*/*/Kbuild
 
 # don't include the rootfs when mounted
-rootfs
+/rootfs
 
 # kate swap files
 *.kate-swp
