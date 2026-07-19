@@ -1,0 +1,75 @@
+#!/bin/bash
+set -e
+
+. "$(dirname "$0")"/_common
+## file system
+fs="ext3"
+dd_count=$normal_size
+break_debug=0
+
+#main
+loop_device="loop_floppy.raw"
+
+ptlfs=$(_ptlname $fs)
+mkfs=$(_findmkfs $fs)
+echo -e "restore_to_raw option test"
+echo -e "====================\n"
+echo -e "\ncreate raw file $raw\n"
+_ptlbreak
+[ -f $raw ] && rm $raw
+echo -e "    dd if=/dev/zero of=$raw bs=$dd_bs count=$dd_count\n"
+dd if=/dev/zero of=$raw bs=$dd_bs count=$dd_count
+
+echo -e "\nformat $raw as $fs raw partition\n"
+echo -e "    mkfs.$fs `eval echo "$"mkfs_option_for_$fs""` $raw\n"
+_ptlbreak
+$mkfs `eval echo "$"mkfs_option_for_$fs""` $raw
+
+for algo in 2 3; do
+    if [ "$algo" = "2" ]; then
+        hash_name="XXH64"
+    else
+        hash_name="XXH128"
+    fi
+
+    echo -e "\nclone $raw to $img with $hash_name\n"
+    [ -f $img ] && rm $img
+    echo -e "    $ptlfs -d -c -s $raw -O $img -a $algo -k 63 -d3 -F -L $logfile\n"
+    _ptlbreak
+    time $ptlfs -d -c -s $raw -O $img -a $algo -k 63 -d3 -F -L $logfile
+    _check_return_code
+
+    cat $logfile | grep $hash_name
+    _check_return_code
+
+    sleep 5
+
+    echo -e "\nrestore $img to $raw file(raw format)\n"
+    echo -e "    $ptlfs -r -s $img -O $loop_device -d3 -L $logfile --restore_raw_file \n"
+    _ptlbreak
+    $ptlfs -r -F -s $img -O $loop_device -d3 -L $logfile --restore_raw_file
+    _check_return_code
+
+    cat $logfile | grep $hash_name
+    _check_return_code
+
+    echo -e "\ntest row file by blkid?\n"
+    echo -e "\nblkid $raw\n"
+    _ptlbreak
+    blkid $raw
+    _ptlbreak
+
+    echo -e "\npartclone.info test\n"
+    $ptlinfo -d3 -s $img -L $logfile 2>&1 | grep $hash_name
+    _check_return_code
+
+    echo -e "\npartclone.chkimg test\n"
+    $ptlchkimg -s $img -L $logfile
+    _check_return_code
+done
+
+echo -e "\nrestore to raw test ok\n"
+echo -e "\nclear tmp files $img $raw $logfile $md5\n"
+_ptlbreak
+rm -f $img $raw $logfile $md5 $loop_device
+

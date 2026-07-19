@@ -1,0 +1,284 @@
+if ENABLE_XXHASH
+PCL_XXHASH_LIBS = $(XXHASH_LIBS)
+PCL_XXHASH_CFLAGS = $(XXHASH_CFLAGS)
+else
+PCL_XXHASH_LIBS =
+PCL_XXHASH_CFLAGS =
+endif
+
+AUTOMAKE_OPTIONS = subdir-objects
+AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -D_FILE_OFFSET_BITS=64 $(PCL_XXHASH_CFLAGS) $(ISAL_CFLAGS)
+LDADD = $(LIBINTL) $(PCL_XXHASH_LIBS)
+LIBS += $(ISAL_LIBS)
+sbin_PROGRAMS=partclone.info partclone.dd partclone.restore partclone.chkimg partclone.imager #partclone.imgfuse #partclone.block
+TOOLBOX = srcdir=$(top_srcdir) builddir=$(top_builddir) $(top_srcdir)/toolbox
+
+
+BTRFS_SOURCE=btrfs/crypto/blake2b-ref.c btrfs/crypto/crc32c.c btrfs/crypto/hash.c btrfs/crypto/sha224-256.c btrfs/kernel-lib/list_sort.c btrfs/kernel-lib/raid56.c btrfs/kernel-lib/rbtree.c btrfs/kernel-lib/tables.c btrfs/kernel-lib/bitmap.h btrfs/kernel-shared/ulist.c btrfs/kernel-shared/zoned.c btrfs/kernel-shared/extent-tree.c btrfs/kernel-shared/ctree.c btrfs/kernel-shared/volumes.c btrfs/kernel-shared/disk-io.c btrfs/kernel-shared/delayed-ref.c btrfs/kernel-shared/dir-item.c  btrfs/kernel-shared/extent_io.c btrfs/kernel-shared/file-item.c btrfs/kernel-shared/free-space-cache.c btrfs/kernel-shared/free-space-tree.c btrfs/kernel-shared/inode-item.c btrfs/kernel-shared/print-tree.c btrfs/kernel-shared/root-tree.c btrfs/kernel-shared/transaction.c  btrfs/kernel-shared/uuid-tree.c btrfs/kernel-shared/compression.h btrfs/kernel-shared/accessors.c btrfs/kernel-shared/extent-io-tree.c btrfs/kernel-shared/locking.c btrfs/kernel-shared/messages.c btrfs/kernel-shared/async-thread.c btrfs/kernel-shared/tree-checker.c btrfs/libbtrfsutil/stubs.c btrfs/libbtrfsutil/subvolume.c btrfs/libbtrfsutil/qgroup.c btrfs/libbtrfs/send-stream.c btrfs/libbtrfs/ioctl.h btrfs/libbtrfs/kerncompat.h btrfs/common/device-scan.c btrfs/common/messages.c btrfs/common/path-utils.c btrfs/common/rbtree-utils.c btrfs/common/utils.c btrfs/common/device-utils.c btrfs/common/fsfeatures.c  btrfs/common/units.c btrfs/common/open-utils.c btrfs/common/parse-utils.c btrfs/common/extent-cache.c btrfs/common/string-utils.c btrfs/common/filesystem-utils.c btrfs/common/cpu-utils.c btrfs/common/sysfs-utils.c  btrfs/check/repair.c
+if X64
+BTRFS_SOURCE+=btrfs/crypto/crc32c-pcl-intel-asm_64.S
+endif
+
+XFS_LIBFROG=xfs/libfrog/radix-tree.c xfs/libfrog/list_sort.c xfs/libfrog/crc32.c xfs/libfrog/linux.c xfs/libfrog/util.c xfs/libfrog/bitmap.c xfs/libfrog/avl64.c
+XFS_SOURCE=xfs/libxfs/buf_mem.c xfs/libxfs/cache.c xfs/libxfs/defer_item.c xfs/libxfs/init.c xfs/libxfs/inode.c xfs/libxfs/iunlink.c xfs/libxfs/kmem.c xfs/libxfs/listxattr.c xfs/libxfs/logitem.c xfs/libxfs/rdwr.c xfs/libxfs/topology.c xfs/libxfs/trans.c xfs/libxfs/util.c xfs/libxfs/xfblob.c xfs/libxfs/xfile.c xfs/libxfs/xfs_ag.c xfs/libxfs/xfs_ag_resv.c xfs/libxfs/xfs_alloc.c xfs/libxfs/xfs_alloc_btree.c xfs/libxfs/xfs_attr.c xfs/libxfs/xfs_attr_leaf.c xfs/libxfs/xfs_attr_remote.c xfs/libxfs/xfs_bit.c xfs/libxfs/xfs_bmap.c xfs/libxfs/xfs_bmap_btree.c xfs/libxfs/xfs_btree.c xfs/libxfs/xfs_btree_mem.c xfs/libxfs/xfs_btree_staging.c xfs/libxfs/xfs_da_btree.c xfs/libxfs/xfs_defer.c xfs/libxfs/xfs_dir2.c xfs/libxfs/xfs_dir2_block.c xfs/libxfs/xfs_dir2_data.c xfs/libxfs/xfs_dir2_leaf.c xfs/libxfs/xfs_dir2_node.c xfs/libxfs/xfs_dir2_sf.c xfs/libxfs/xfs_dquot_buf.c xfs/libxfs/xfs_exchmaps.c xfs/libxfs/xfs_group.c xfs/libxfs/xfs_ialloc.c xfs/libxfs/xfs_iext_tree.c xfs/libxfs/xfs_inode_buf.c xfs/libxfs/xfs_inode_fork.c xfs/libxfs/xfs_inode_util.c xfs/libxfs/xfs_ialloc_btree.c xfs/libxfs/xfs_metadir.c xfs/libxfs/xfs_metafile.c xfs/libxfs/xfs_log_rlimit.c xfs/libxfs/xfs_parent.c xfs/libxfs/xfs_refcount.c xfs/libxfs/xfs_refcount_btree.c xfs/libxfs/xfs_rmap.c xfs/libxfs/xfs_rmap_btree.c xfs/libxfs/xfs_rtbitmap.c xfs/libxfs/xfs_rtgroup.c xfs/libxfs/xfs_sb.c xfs/libxfs/xfs_symlink_remote.c xfs/libxfs/xfs_trans_inode.c xfs/libxfs/xfs_trans_resv.c xfs/libxfs/xfs_trans_space.c xfs/libxfs/xfs_types.c $(XFS_LIBFROG)
+
+EXFATFS_SOURCE=exfat/cluster.c exfat/utf.c exfat/utils.c exfat/lookup.c exfat/io.c exfat/log.c exfat/node.c exfat/mount.c exfat/time.c
+
+F2FS_SOURCE=f2fs/fsck.c f2fs/fsck.h f2fs/f2fs.h f2fs/mount.c f2fs/mkquota.c f2fs/quotaio.c f2fs/dump.c f2fs/dir.c f2fs/quotaio_v2.c f2fs/node.c f2fs/segment.c f2fs/xattr.c  f2fs/dict.c f2fs/quotaio_tree.c f2fs/libf2fs.c f2fs/libf2fs_io.c f2fs/libf2fs_zoned.c f2fs/nls_utf8.c
+
+CRYPTO_DEPS = $(OPENSSL_LIBS) $(ZLIB_LIBS) $(ZSTD_LIBS)
+
+if ENABLE_STATIC
+AM_LDFLAGS=-all-static
+LDADD_static=-ldl
+endif
+
+if ENABLE_TINFO
+LIBS+=-ltinfo
+endif
+
+AM_CFLAGS=-D_FILE_OFFSET_BITS=64
+
+if ENABLE_MEMTRACE
+AM_CFLAGS+=-DMEMTRACE -DMEMWATCH -DMW_STDIO
+endif
+
+if ENABLE_NCURSESW
+AM_CFLAGS+=-I/usr/include/ncursesw
+endif
+
+version.h: FORCE
+
+main_files=main.c partclone.c progress.c checksum.c partclone.h progress.h gettext.h checksum.h bitmap.h
+partclone_info_SOURCES=info.c partclone.c checksum.c partclone.h fs_common.h checksum.h
+partclone_info_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_restore_SOURCES=$(main_files) ddclone.c ddclone.h
+partclone_restore_CFLAGS=-DRESTORE -DDD
+partclone_restore_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+partclone_chkimg_SOURCES=$(main_files) ddclone.c ddclone.h
+partclone_chkimg_CFLAGS=-DCHKIMG -DDD
+partclone_chkimg_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+partclone_dd_SOURCES=$(main_files) ddclone.c ddclone.h
+partclone_dd_CFLAGS=-DDD
+partclone_dd_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+partclone_imager_SOURCES=$(main_files) ddclone.c ddclone.h
+partclone_imager_CFLAGS=-DIMG
+partclone_imager_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+if ENABLE_EXTFS
+sbin_PROGRAMS += partclone.extfs
+partclone_extfs_SOURCES=$(main_files) extfsclone.c extfsclone.h
+partclone_extfs_CFLAGS=-DEXTFS
+partclone_extfs_LDADD=torrent_helper.o -lext2fs -lcom_err $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread
+endif
+
+if ENABLE_REISERFS
+sbin_PROGRAMS += partclone.reiserfs
+partclone_reiserfs_SOURCES=$(main_files) reiserfsclone.c reiserfsclone.h
+partclone_reiserfs_CFLAGS=-DREISERFS
+partclone_reiserfs_LDADD=torrent_helper.o -lreiserfs -ldal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_REISER4
+sbin_PROGRAMS += partclone.reiser4
+partclone_reiser4_SOURCES=$(main_files) reiser4clone.c reiser4clone.h
+partclone_reiser4_CFLAGS=-DREISER4
+partclone_reiser4_LDADD=torrent_helper.o -lreiser4 -laal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_HFSP
+sbin_PROGRAMS += partclone.hfsp
+partclone_hfsp_SOURCES=$(main_files) hfsplusclone.c hfsplusclone.h
+partclone_hfsp_CFLAGS=-DHFSPLUS
+partclone_hfsp_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_APFS
+sbin_PROGRAMS += partclone.apfs
+partclone_apfs_SOURCES=$(main_files) apfsclone.c apfsclone.h
+partclone_apfs_CFLAGS=-DAPFS
+partclone_apfs_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+
+if ENABLE_XFS
+sbin_PROGRAMS += partclone.xfs
+partclone_xfs_SOURCES=$(main_files) xfsclone.c xfsclone.h $(XFS_SOURCE)
+partclone_xfs_CFLAGS=-I$(srcdir)/xfs/include -I$(srcdir)/xfs/libxfs/ -I$(srcdir)/xfs/include/xfs/ -I$(srcdir)/xfs/ -DXFS -D_GNU_SOURCE -DNDEBUG  $(UUID_CFLAGS) $(URCU_CFLAGS)
+partclone_xfs_LDADD=torrent_helper.o -lrt -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread $(URCU_LIBS)
+endif
+
+if ENABLE_EXFAT
+sbin_PROGRAMS += partclone.exfat
+partclone_exfat_SOURCES=$(main_files) exfatclone.c exfatclone.h $(EXFATFS_SOURCE)
+partclone_exfat_CFLAGS=-DEXFAT -D_GNU_SOURCE -std=c99
+partclone_exfat_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_F2FS
+sbin_PROGRAMS += partclone.f2fs
+partclone_f2fs_SOURCES=$(main_files) f2fsclone.c f2fsclone.h $(F2FS_SOURCE)
+partclone_f2fs_CFLAGS=-DF2FS -DHAVE_MNTENT_H=1 -DHAVE_SYS_MOUNT_H=1 -DHAVE_SYS_SYSMACROS_H=1 -DHAVE_SYS_UTSNAME_H=1 -DHAVE_SCSI_SG_H=1  -DHAVE_SYS_IOCTL_H=1 -DHAVE_LINUX_HDREG_H  -DHAVE_LINUX_LIMITS_H=1 -DHAVE_LINUX_TYPES_H=1 -DHAVE_LSEEK64=1 -DHAVE_SETMNTENT=1  -I$(srcdir)/f2fs/
+partclone_f2fs_LDADD=torrent_helper.o -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_NILFS2
+sbin_PROGRAMS += partclone.nilfs2
+partclone_nilfs2_SOURCES=$(main_files) nilfsclone.c nilfsclone.h
+partclone_nilfs2_CFLAGS=-DNILFS
+partclone_nilfs2_LDADD=torrent_helper.o -lnilfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_FAT
+sbin_PROGRAMS += partclone.fat
+partclone_fat_SOURCES=$(main_files) fatclone.c fatclone.h
+partclone_fat_CFLAGS=-DFAT
+partclone_fat_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+sbin_PROGRAMS += partclone.ntfsfixboot
+partclone_ntfsfixboot_SOURCES=ntfsfixboot.c
+if ENABLE_NTFS
+sbin_PROGRAMS += partclone.ntfs
+partclone_ntfs_SOURCES=$(main_files) ntfsclone-ng.c ntfsclone-ng.h
+if ENABLE_NTFS_3G
+partclone_ntfs_CFLAGS=-DNTFS3G
+partclone_ntfs_LDADD=torrent_helper.o -lntfs-3g $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+else
+partclone_ntfs_CFLAGS=-DNTFS
+partclone_ntfs_LDADD=torrent_helper.o -lntfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+endif
+
+if ENABLE_UFS
+sbin_PROGRAMS += partclone.ufs
+partclone_ufs_SOURCES=$(main_files) ufsclone.c ufsclone.h
+partclone_ufs_CFLAGS=-DUFS -D_GNU_SOURCE
+partclone_ufs_LDADD=torrent_helper.o -lufs -lbsd $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_VMFS
+sbin_PROGRAMS += partclone.vmfs
+partclone_vmfs_SOURCES=$(main_files) vmfsclone.c vmfsclone.h
+partclone_vmfs_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
+partclone_vmfs_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+sbin_PROGRAMS += partclone.vmfs5
+partclone_vmfs5_SOURCES=$(main_files) vmfs5clone.c vmfsclone.h
+partclone_vmfs5_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
+partclone_vmfs5_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+sbin_PROGRAMS += partclone.fstype
+partclone_fstype_SOURCES=fstype.c
+partclone_fstype_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
+partclone_fstype_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+
+endif
+
+if ENABLE_JFS
+sbin_PROGRAMS += partclone.jfs
+#partclone_jfs_SOURCES=$(main_files) jfs_devices.c jfs_devices.h jfsclone.c jfsclone.h
+partclone_jfs_SOURCES=$(main_files) jfsclone.c jfsclone.h
+partclone_jfs_CFLAGS=-DJFS
+partclone_jfs_LDADD=torrent_helper.o -ljfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_BTRFS
+noinst_LTLIBRARIES = libpartclone_btrfs.la
+libpartclone_btrfs_la_SOURCES = $(BTRFS_SOURCE) btrfs_static_fixes.c
+libpartclone_btrfs_la_CFLAGS = -std=gnu11 -DBTRFS -DBTRFS_FLAT_INCLUDES -D_XOPEN_SOURCE=700 -D_GNU_SOURCE -DCRYPTOPROVIDER_BUILTIN=1 -I$(srcdir)/btrfs -I$(srcdir)/btrfs/include -I$(srcdir)/btrfs/libbtrfsutil
+if ENABLE_STATIC
+libpartclone_btrfs_la_CFLAGS += -Dparse_range=btrfs_parse_range -DXXH_NAMESPACE=BTRFS_
+endif
+
+sbin_PROGRAMS += partclone.btrfs
+partclone_btrfs_SOURCES=$(main_files) btrfsclone.c btrfsclone.h
+partclone_btrfs_CFLAGS=-std=gnu11 -DBTRFS -DBTRFS_FLAT_INCLUDES -D_XOPEN_SOURCE=700 -D_GNU_SOURCE -DCRYPTOPROVIDER_BUILTIN=1 -I$(srcdir)/btrfs -I$(srcdir)/btrfs/include -I$(srcdir)/btrfs/libbtrfsutil 
+if ENABLE_STATIC
+partclone_btrfs_CFLAGS += -Dparse_range=btrfs_parse_range
+endif
+partclone_btrfs_LDADD=libpartclone_btrfs.la torrent_helper.o -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} 
+endif
+
+if ENABLE_MINIX
+sbin_PROGRAMS += partclone.minix
+partclone_minix_SOURCES=$(main_files) minixclone.c minixclone.h
+partclone_minix_CFLAGS=-DMINIX
+partclone_minix_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+endif
+
+if ENABLE_FUSE
+sbin_PROGRAMS+=partclone.imgfuse
+partclone_imgfuse_SOURCES=fuseimg.c partclone.c checksum.c partclone.h fs_common.h checksum.h
+partclone_imgfuse_CFLAGS=$(FUSE_CFLAGS)
+partclone_imgfuse_LDADD=$(FUSE_LIBS) torrent_helper.o $(CRYPTO_DEPS) ${LDADD_static} $(PCL_XXHASH_LIBS)
+if ENABLE_STATIC
+partclone_imgfuse_LDADD+=-ldl
+endif
+endif
+
+bashcompletiondir=@bashcompletiondir@
+bashcompletion_DATA = partclone-completion
+
+# Extra
+install-exec-hook:
+if ENABLE_EXTFS
+	$(LN_S) -f partclone.extfs $(DESTDIR)$(sbindir)/partclone.ext2
+	$(LN_S) -f partclone.extfs $(DESTDIR)$(sbindir)/partclone.ext3
+	$(LN_S) -f partclone.extfs $(DESTDIR)$(sbindir)/partclone.ext4
+	$(LN_S) -f partclone.extfs $(DESTDIR)$(sbindir)/partclone.ext4dev
+endif
+if ENABLE_HFSP
+	$(LN_S) -f partclone.hfsp $(DESTDIR)$(sbindir)/partclone.hfs+
+	$(LN_S) -f partclone.hfsp $(DESTDIR)$(sbindir)/partclone.hfsplus
+endif
+if ENABLE_NTFS
+	$(LN_S) -f partclone.ntfsfixboot $(DESTDIR)$(sbindir)/partclone.ntfsreloc
+endif
+if ENABLE_FAT
+	$(LN_S) -f partclone.fat $(DESTDIR)$(sbindir)/partclone.fat12
+	$(LN_S) -f partclone.fat $(DESTDIR)$(sbindir)/partclone.fat16
+	$(LN_S) -f partclone.fat $(DESTDIR)$(sbindir)/partclone.fat32
+	$(LN_S) -f partclone.fat $(DESTDIR)$(sbindir)/partclone.vfat
+endif
+if ENABLE_VMFS
+	$(LN_S) -f partclone.vmfs $(DESTDIR)$(sbindir)/partclone.VMFS_volume_member
+	$(LN_S) -f partclone.vmfs $(DESTDIR)$(sbindir)/partclone.vmfs3
+#	$(LN_S) -f partclone.vmfs $(DESTDIR)$(sbindir)/partclone.vmfs5
+endif
+
+uninstall-local:
+	$(RM) -f $(bashcompletiondir)/partclone-completion
+if ENABLE_EXTFS
+	$(RM) -f $(sbindir)/partclone.ext4dev
+	$(RM) -f $(sbindir)/partclone.ext4
+	$(RM) -f $(sbindir)/partclone.ext3
+	$(RM) -f $(sbindir)/partclone.ext2
+endif
+if ENABLE_HFSP
+	$(RM) -f $(sbindir)/partclone.hfs+
+	$(RM) -f $(sbindir)/partclone.hfsplus
+endif
+if ENABLE_FAT
+	$(RM) -f $(sbindir)/partclone.fat12
+	$(RM) -f $(sbindir)/partclone.fat16
+	$(RM) -f $(sbindir)/partclone.fat32
+	$(RM) -f $(sbindir)/partclone.vfat
+endif
+if ENABLE_NTFS
+	$(RM) -f $(sbindir)/partclone.ntfsreloc
+endif
+
+if ENABLE_VMFS
+	$(RM) -f $(sbindir)/partclone.VMFS_volume_member
+endif
+
+distclean-local:
+	-rm -rf .deps f2fs/.deps btrfs/libbtrfs/.deps btrfs/kernel-lib/.deps btrfs/crypto/.deps btrfs/kernel-shared/.deps btrfs/libbtrfsutil/.deps btrfs/common/.deps btrfs/check/.deps xfs/libxfs/.deps xfs/libfrog/.deps exfat/.deps
+
+MAINTAINERCLEANFILES = Makefile.in
+
+FORCE:
