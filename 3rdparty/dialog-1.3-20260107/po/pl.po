@@ -1,0 +1,223 @@
+# translation of dialog.po to Polish
+# This file is distributed under the same license as the dialog package.
+# Jaroslaw Swierczynski <swiergot@intersec.pl>, 2003
+# Michał Trzebiatowski <hippie_1968@hotmail.com>, 2009
+# Jakub Bogusz <qboosh@pld-linux.org>, 2025
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dialog 1.3.20251001\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-03-06 08:43-0500\n"
+"PO-Revision-Date: 2025-12-22 18:30+0100\n"
+"Last-Translator: Jakub Bogusz <qboosh@pld-linux.org>\n"
+"Language-Team: Polish <translation-team-pl@lists.sourceforge.net>\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+
+#: buttons.c:500
+msgid "Yes"
+msgstr "Tak"
+
+#: buttons.c:508
+msgid "No"
+msgstr "Nie"
+
+#: buttons.c:516
+msgid "OK"
+msgstr "OK"
+
+#: buttons.c:524
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: buttons.c:532
+msgid "EXIT"
+msgstr "WYJDŹ"
+
+#: buttons.c:540
+msgid "Extra"
+msgstr "Ekstra"
+
+#: buttons.c:548
+msgid "Help"
+msgstr "Pomoc"
+
+#. Headline "Month"
+#: calendar.c:463
+msgid "Month"
+msgstr "Miesiąc"
+
+#. Headline "Year"
+#: calendar.c:485
+msgid "Year"
+msgstr "Rok"
+
+#: dialog.c:473
+#, c-format
+msgid "Invalid option \"%s\""
+msgstr "Błędna opcja \"%s\""
+
+#: dialog.c:533
+#, c-format
+msgid "Showing arguments at arg%d\n"
+msgstr "Pokazywanie argumentów przy arg%d\n"
+
+#: dialog.c:542
+msgid "Too many --file options"
+msgstr "Zbyt dużo opcji --file"
+
+#: dialog.c:575
+msgid "error on filehandle in unescape_argv"
+msgstr "błąd na uchwycie pliku w unescape_argv"
+
+#: dialog.c:634
+#, c-format
+msgid "Cannot open --file %s"
+msgstr "Nie można otworzyć --file %s"
+
+#: dialog.c:638
+msgid "No value given for --file"
+msgstr "Nie podano wartości dla --file"
+
+#: dialog.c:713
+#, c-format
+msgid ""
+"%s.\n"
+"Use --help to list options.\n"
+"\n"
+msgstr ""
+"%s.\n"
+"Listę opcji można uzyskać przez --help.\n"
+"\n"
+
+#: dialog.c:747
+#, c-format
+msgid "Expected %d arguments, found only %d"
+msgstr "Oczekiwano argumentów w liczbie %d, napotkano tylko %d"
+
+#: dialog.c:751
+#, c-format
+msgid "Expected %d arguments, found extra %d"
+msgstr "Oczekiwano argumentów w liczbie %d, napotkano dodatkowych: %d"
+
+#: dialog.c:775
+#, c-format
+msgid "Expected a number for token %d of %.*s"
+msgstr "Oczekiwano liczby dla tokenu %d w %.*s"
+
+#: dialog.c:911
+msgid "Rename"
+msgstr "Zmień nazwę"
+
+#: dialog.c:1367
+#, c-format
+msgid "Expected a numeric-parameter for %.*s"
+msgstr "Oczekiwano parametru liczbowego dla %.*s"
+
+#: dialog.c:1423
+#, c-format
+msgid "Button name \"%.*s\" unknown"
+msgstr "Nieznana nazwa przycisku \"%.*s\""
+
+#: dialog.c:1896
+msgid "Cannot open input-fd\n"
+msgstr "Nie można otworzyć wejściowego deskryptora pliku\n"
+
+#: dialog.c:1903
+msgid "Cannot open output-fd\n"
+msgstr "Nie można otworzyć wyjściowego deskryptora pliku\n"
+
+#: dialog.c:1983
+#, c-format
+msgid "Expected a filename for %.*s"
+msgstr "Oczekiwano nazwy pliku dla %.*s"
+
+#: dialog.c:2018
+msgid "Expected a box option"
+msgstr "Oczekiwano opcji pudełka"
+
+#: dialog.c:2031
+#, c-format
+msgid "Unexpected widget with --separate-output %.*s"
+msgstr "Niespodziewany widżet przy --separate-output %.*s"
+
+#: dialog.c:2047
+#, c-format
+msgid "Unexpected option %.*s"
+msgstr "Niespodziewana opcja %.*s"
+
+#: dialog.c:2048
+#, c-format
+msgid "Unknown option %.*s"
+msgstr "Nieznana opcja %.*s"
+
+#: dialog.c:2056
+#, c-format
+msgid "Expected at least %d tokens for %.*s, have %d"
+msgstr "Dla %3$.*2$s oczekiwano tokenów w liczbie %1$d, napotkano %4$d"
+
+#: dialog.c:2064
+#, c-format
+msgid "Expected no more than %d tokens for %.*s, have %d"
+msgstr "Dla %3$.*2$s oczekiwano tokenów w liczbie co najwyżej %1$d, napotkano %4$d"
+
+#: dialog.c:2128
+#, c-format
+msgid "Expected --and-widget, not %.*s"
+msgstr "Oczekiwano --and-widget, nie %.*s"
+
+#: fselect.c:630
+msgid "Directories"
+msgstr "Katalogi"
+
+#: fselect.c:631
+msgid "Files"
+msgstr "Pliki"
+
+#: mixedgauge.c:58
+msgid "Succeeded"
+msgstr "Udane"
+
+#: mixedgauge.c:61
+msgid "Failed"
+msgstr "Niepowodzone"
+
+#: mixedgauge.c:64
+msgid "Passed"
+msgstr "Przeszłe"
+
+#: mixedgauge.c:67
+msgid "Completed"
+msgstr "Zakończone"
+
+#: mixedgauge.c:70
+msgid "Checked"
+msgstr "Sprawdzone"
+
+#: mixedgauge.c:73
+msgid "Done"
+msgstr "Gotowe"
+
+#: mixedgauge.c:76
+msgid "Skipped"
+msgstr "Pominięte"
+
+#: mixedgauge.c:79
+msgid "In Progress"
+msgstr "W toku"
+
+#: mixedgauge.c:85
+msgid "N/A"
+msgstr "Brak"
+
+#: mixedgauge.c:193
+msgid "Overall Progress"
+msgstr "Ogólny postęp"
+
+#: textbox.c:517
+msgid "Search"
+msgstr "Szukaj"

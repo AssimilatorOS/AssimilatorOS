@@ -1,0 +1,226 @@
+# Dialog
+# Copyright 2001, # Thomas Dickey
+# This file is distributed under the same license as the dialog package.
+#
+# Michael Piefel <piefel@informatik.hu-berlin.de>, 2002.
+# Roland Illig <roland.illig@gmx.de>, 2009-2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dialog 1.3.20251001\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-03-06 08:43-0500\n"
+"PO-Revision-Date: 2025-12-17 22:26+0100\n"
+"Last-Translator: Roland Illig <roland.illig@gmx.de>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"X-Generator: Poedit 3.7\n"
+
+#: buttons.c:500
+msgid "Yes"
+msgstr "Ja"
+
+#: buttons.c:508
+msgid "No"
+msgstr "Nein"
+
+#: buttons.c:516
+msgid "OK"
+msgstr "OK"
+
+#: buttons.c:524
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: buttons.c:532
+msgid "EXIT"
+msgstr "VERLASSEN"
+
+#: buttons.c:540
+msgid "Extra"
+msgstr "Extra"
+
+#: buttons.c:548
+msgid "Help"
+msgstr "Hilfe"
+
+#. Headline "Month"
+#: calendar.c:463
+msgid "Month"
+msgstr "Monat"
+
+#. Headline "Year"
+#: calendar.c:485
+msgid "Year"
+msgstr "Jahr"
+
+#: dialog.c:473
+#, c-format
+msgid "Invalid option \"%s\""
+msgstr "Ungültige Option »%s«"
+
+#: dialog.c:533
+#, c-format
+msgid "Showing arguments at arg%d\n"
+msgstr "Argumente an Arg%d sind\n"
+
+#: dialog.c:542
+msgid "Too many --file options"
+msgstr "Zu viele »--file«-Optionen"
+
+#: dialog.c:575
+msgid "error on filehandle in unescape_argv"
+msgstr "Fehler bei Dateihandle in unescape_argv"
+
+#: dialog.c:634
+#, c-format
+msgid "Cannot open --file %s"
+msgstr "Fehler beim Öffnen der Datei »%s«"
+
+#: dialog.c:638
+msgid "No value given for --file"
+msgstr "Kein Wert für »--file« angegeben"
+
+#: dialog.c:713
+#, c-format
+msgid ""
+"%s.\n"
+"Use --help to list options.\n"
+"\n"
+msgstr ""
+"%s.\n"
+"Verwenden Sie »--help«, um die Optionen aufzulisten.\n"
+"\n"
+
+#: dialog.c:747
+#, c-format
+msgid "Expected %d arguments, found only %d"
+msgstr "%d Argumente erwartet, aber nur %d bekommen"
+
+#: dialog.c:751
+#, c-format
+msgid "Expected %d arguments, found extra %d"
+msgstr "%d Argumente erwartet, %d zusätzlich bekommen"
+
+#: dialog.c:775
+#, c-format
+msgid "Expected a number for token %d of %.*s"
+msgstr "Für das Token %d von %.*s wurde eine Zahl erwartet"
+
+#: dialog.c:911
+msgid "Rename"
+msgstr "Umbenennen"
+
+#: dialog.c:1367
+#, c-format
+msgid "Expected a numeric-parameter for %.*s"
+msgstr "Für %.*s wurde ein numerischer Parameter erwartet"
+
+#: dialog.c:1423
+#, c-format
+msgid "Button name \"%.*s\" unknown"
+msgstr "Button-Name »%.*s« unbekannt"
+
+#: dialog.c:1896
+msgid "Cannot open input-fd\n"
+msgstr "Fehler beim Öffnen des Eingabe-Dateideskriptors\n"
+
+#: dialog.c:1903
+msgid "Cannot open output-fd\n"
+msgstr "Fehler beim Öffnen des Ausgabe-Dateideskriptors\n"
+
+#: dialog.c:1983
+#, c-format
+msgid "Expected a filename for %.*s"
+msgstr "Dateiname für %.*s erwartet"
+
+#: dialog.c:2018
+msgid "Expected a box option"
+msgstr "Box-Option erwartet"
+
+#: dialog.c:2031
+#, c-format
+msgid "Unexpected widget with --separate-output %.*s"
+msgstr "Unerwartetes Anzeigeelement mit »--separate-output %.*s«"
+
+#: dialog.c:2047
+#, c-format
+msgid "Unexpected option %.*s"
+msgstr "Unerwartete Option »%.*s«"
+
+#: dialog.c:2048
+#, c-format
+msgid "Unknown option %.*s"
+msgstr "Unbekannte Option »%.*s«"
+
+#: dialog.c:2056
+#, c-format
+msgid "Expected at least %d tokens for %.*s, have %d"
+msgstr "Erwartet wurden mindestens %d Tokens für %.*s, tatsächlich waren nur %d vorhanden"
+
+#: dialog.c:2064
+#, c-format
+msgid "Expected no more than %d tokens for %.*s, have %d"
+msgstr "Erwartet wurden höchstens %d Tokens für %.*s, tatsächlich waren %d vorhanden"
+
+#: dialog.c:2128
+#, c-format
+msgid "Expected --and-widget, not %.*s"
+msgstr "Option »--and-widget« erwartet, nicht »%.*s«"
+
+#: fselect.c:630
+msgid "Directories"
+msgstr "Verzeichnisse"
+
+#: fselect.c:631
+msgid "Files"
+msgstr "Dateien"
+
+#: mixedgauge.c:58
+msgid "Succeeded"
+msgstr "Erfolgreich"
+
+#: mixedgauge.c:61
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+#: mixedgauge.c:64
+msgid "Passed"
+msgstr "Bestanden"
+
+#: mixedgauge.c:67
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+#: mixedgauge.c:70
+msgid "Checked"
+msgstr "Geprüft"
+
+#: mixedgauge.c:73
+msgid "Done"
+msgstr "Erledigt"
+
+#: mixedgauge.c:76
+msgid "Skipped"
+msgstr "Übersprungen"
+
+#: mixedgauge.c:79
+msgid "In Progress"
+msgstr "In Bearbeitung"
+
+#: mixedgauge.c:85
+msgid "N/A"
+msgstr "N/A"
+
+#: mixedgauge.c:193
+msgid "Overall Progress"
+msgstr "Gesamtfortschritt"
+
+#: textbox.c:517
+msgid "Search"
+msgstr "Suche"
