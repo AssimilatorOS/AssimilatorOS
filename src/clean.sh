@@ -19,7 +19,7 @@ fi
 echo "${SCRIPT_NAME}: Cleaning ${PROJ_DIR}"
 umount -v /dev/loop0p1 ||:
 umount -v /dev/loop0p2 ||:
-losetup -v -D ||:
+losetup -D ||:
 rm -fv "${PROJ_DIR}/vdisk.img" ||:
 rm -rfv "${PROJ_DIR}/3rdparty/busybox/build"     ||:
 rm -rfv "${PROJ_DIR}/3rdparty/grub/build"        ||:
