@@ -337,12 +337,25 @@ function check_deps() {
                 exit 1
             fi
         elif [[ "$dep_solver" == "pacman" ]]; then
-            pacman -Q "$dep" >/dev/null 2>&1 || retval=$?
+            local pkg="$dep"
+
+            # Translate canonical dependency name to Arch package name (if mapping exists).
+            if [[ -f "$PROJ_DIR/src/pkgnames.json" ]] && [[ -f /etc/os-release ]]; then
+                source /etc/os-release
+                pkg="$(jq -r --arg dist "$ID" --arg dep "$dep" '.[$dist].pkg_map[$dep] as $m | if $m == "" then "" elif $m == null then $dep else $m end' "$PROJ_DIR/src/pkgnames.json")"
+            fi
+
+            if [[ -z "$pkg" ]]; then
+                echo "${bold}${yellow}skipped${normal} (no Arch package mapping for ${dep})"
+                continue
+            fi
+
+            pacman -Q "$pkg" >/dev/null 2>&1 || retval=$?
             if [[ "$retval" == 0 ]]; then
                 echo "${bold}${green}installed${normal}"
             else
                 echo "${red}not installed${normal}"
-                echo "${red_bg}${bold}${white}${SCRIPT_NAME}: Missing dependency: ${dep}! Exiting${normal}"
+                echo "${red_bg}${bold}${white}${SCRIPT_NAME}: Missing dependency: ${pkg}! Exiting${normal}"
                 exit 1
             fi
         elif [[ "$dep_solver" == "dnf" ]]; then
